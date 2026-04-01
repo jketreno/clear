@@ -225,14 +225,29 @@ check_autonomy() {
       local staged_files
       staged_files=$(git -C "$PROJECT_ROOT" diff --cached --name-only 2>/dev/null || echo "")
       if [[ -n "$staged_files" ]]; then
-        # Read humans-only paths from autonomy.yml (basic grep, no yaml parser required)
+        # Humans-only paths appear as `path:` before `level: humans-only` in each module block.
         while IFS= read -r humans_path; do
-          humans_path=$(echo "$humans_path" | sed 's/.*path: //' | tr -d '"' | tr -d "'")
-          if echo "$staged_files" | grep -q "$humans_path"; then
-            warn "Staged file matches humans-only path: $humans_path"
-            warn "Review clear/autonomy.yml before committing AI-generated changes to this path."
-          fi
-        done < <(grep -A2 "level: humans-only" "$PROJECT_ROOT/clear/autonomy.yml" 2>/dev/null | grep "path:" || true)
+          [[ -z "$humans_path" || "$humans_path" == "*" ]] && continue
+          while IFS= read -r staged; do
+            [[ -z "$staged" ]] && continue
+            if [[ "$staged" == "$humans_path" || "$staged" == "$humans_path/"* ]]; then
+              warn "Staged file matches humans-only path: $humans_path ($staged)"
+              warn "Review clear/autonomy.yml before committing AI-generated changes to this path."
+            fi
+          done <<< "$staged_files"
+        done < <(awk '
+          /^  - path:/ {
+            line = $0
+            sub(/^.*path:[[:space:]]*/, "", line)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+            gsub(/^["'\'']|["'\'']$/, "", line)
+            current_path = line
+            next
+          }
+          /^[[:space:]]+level:[[:space:]]*humans-only/ {
+            if (current_path != "") print current_path
+          }
+        ' "$PROJECT_ROOT/clear/autonomy.yml" 2>/dev/null || true)
       fi
     fi
   else
