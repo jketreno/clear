@@ -1,0 +1,116 @@
+# =============================================================================
+# CLEAR autonomy.yml — Module Autonomy Boundaries (Example/Template)
+# =============================================================================
+# CLEAR Principle: [L] Limited — Define where AI works alone vs with humans
+#
+# This file is the machine-readable boundary map for your project.
+# AI tools are instructed to check this file before modifying any file.
+#
+# Levels:
+#   full-autonomy  — AI can read, modify, and regenerate freely
+#   supervised     — AI generates code, but human must review before commit
+#   humans-only    — AI must NOT generate code here; flag for human attention
+#
+# AI Instructions:
+#   Before modifying any file, find the most specific matching path in this
+#   file. Apply the corresponding level:
+#     full-autonomy  → proceed normally
+#     supervised     → generate, then add "⚠ Human review required" reminder
+#     humans-only    → STOP. Notify the user. Do not generate code here.
+#
+# Run scripts/setup-clear.sh to configure this file for your project.
+# =============================================================================
+
+project: "my-project"  # UPDATE: replace with your project name
+
+modules:
+  # ── Full Autonomy ──────────────────────────────────────────────────────────
+  # Code that is fully derived from another source of truth, or is pure
+  # boilerplate. Safe for AI to regenerate at any time.
+
+  - path: "src/generated"
+    level: full-autonomy
+    reason: "Machine-generated from protobuf/OpenAPI — always regeneratable"
+
+  - path: "src/utils"
+    level: full-autonomy
+    reason: "Pure utility functions with 100% test coverage; highly constrained"
+
+  - path: "tests/fixtures"
+    level: full-autonomy
+    reason: "Test data only; regenerated from real data samples"
+
+  - path: "src/components/proto"
+    level: full-autonomy
+    reason: "Proto visualization components derived directly from .proto files"
+
+  # ── Supervised ────────────────────────────────────────────────────────────
+  # Business logic that AI can draft but humans must validate.
+
+  - path: "src/api"
+    level: supervised
+    reason: "API handlers contain business rules; require human review"
+
+  - path: "src/services"
+    level: supervised
+    reason: "Service layer; may have side effects and external integrations"
+
+  - path: "src/components"
+    level: supervised
+    reason: "UI components may embed business-critical display logic"
+
+  - path: "migrations"
+    level: supervised
+    reason: "Database migrations are irreversible; always need human sign-off"
+
+  # ── Humans Only ───────────────────────────────────────────────────────────
+  # Code where mistakes have severe consequences. No AI generation.
+
+  - path: "src/domain"
+    level: humans-only
+    reason: "Core domain models — strategic work, not generatable"
+
+  - path: "src/payment"
+    level: humans-only
+    reason: "Money movement; regulatory requirements; AI errors are financial risk"
+
+  - path: "src/auth/core"
+    level: humans-only
+    reason: "Authentication core; security-critical; AI mistakes = breach risk"
+
+  - path: "src/crypto"
+    level: humans-only
+    reason: "Cryptographic code; any subtle bug is a security vulnerability"
+
+  # ── Default ───────────────────────────────────────────────────────────────
+  - path: "*"
+    level: supervised
+    reason: "Default: untagged modules require human review"
+
+# =============================================================================
+# Reality Alignment — Sources of Truth
+# =============================================================================
+# AI Instructions: When generating code that touches any of these concepts,
+# derive from the declared source. Never invent your own representation.
+# When systems conflict, the source_of_truth wins.
+
+sources_of_truth:
+  - concept: "User"
+    source_of_truth: "database schema"
+    defined_in: "schema.prisma (or models.py, schema.sql — update as needed)"
+    note: "If the API response shape differs from the DB, the DB wins"
+
+  - concept: "API contract"
+    source_of_truth: "OpenAPI specification"
+    defined_in: "openapi.yml"
+    note: "Never infer API shape from implementation; read the spec"
+
+  # Add more domain concepts:
+  # - concept: "Subscription"
+  #   source_of_truth: "Stripe"
+  #   defined_in: "stripe.subscriptions"
+  #   note: "If local DB disagrees with Stripe, Stripe is correct"
+  #
+  # - concept: "Permissions"
+  #   source_of_truth: "protobuf definitions"
+  #   defined_in: "proto/auth/permissions.proto"

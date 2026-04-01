@@ -1,0 +1,74 @@
+---
+description: CLEAR core workflow — apply to every coding task
+alwaysApply: true
+---
+
+# CLEAR Workflow
+
+This project uses the CLEAR framework. Apply these rules to every coding task.
+
+## Session Start — Announce Active Principles
+
+At the start of the **first response** in any new Composer session or conversation, read `clear/autonomy.yml` and output this status block before answering:
+
+```
+╔══════════════════════════════════════════╗
+║  🔒 CLEAR framework active               ║
+║  C · Constrained  — verify-ci.sh enforced  ║
+║  L · Limited      — autonomy.yml: [found ✅ | NOT FOUND ⚠]  ║
+║  E · Ephemeral    — generated files protected  ║
+║  A · Assertive    — constraint tests required  ║
+║  R · Reality-Aligned — sources_of_truth: [N concepts | none declared]  ║
+║                                          ║
+║  humans-only zones: [list paths, or "none"]  ║
+║  verify-ci.sh: [found ✅ | NOT FOUND ⚠]  ║
+╚══════════════════════════════════════════╝
+```
+
+Fill in the bracketed values from the actual files. Show this block **once per session**. If `clear/autonomy.yml` is missing, tell the user to run `./scripts/setup-clear.sh`.
+
+## Before Starting Any Task
+
+1. Read `clear/autonomy.yml` to identify autonomy levels for affected paths
+2. Read `clear/principles.md` for applicable constraints
+3. For complex tasks (3+ files, new patterns): use PLAN mode first — show the plan, wait for approval, then implement
+
+## Non-Negotiable: Verify Before Completing
+
+**Run `./scripts/verify-ci.sh` before reporting any work as complete.**
+
+```bash
+./scripts/verify-ci.sh        # Full check — run this
+./scripts/verify-ci.sh --fast # Skip slow checks (architecture tests)
+./scripts/verify-ci.sh --fix  # Auto-fix lint issues
+```
+
+Loop:
+1. Generate/modify code
+2. Run verify-ci.sh
+3. Fix any failures
+4. Repeat until all checks pass
+5. Report: "Complete. All CI checks pass." + list affected files
+6. Remind: "Please review the diff and commit."
+
+## PLAN Mode Template
+
+When asked to implement something complex, present this before writing code:
+
+```
+## Plan
+
+**Files to create/modify:**
+- [file] — [what changes and why]
+
+**Autonomy levels:**
+- [file] → [level] (from clear/autonomy.yml)
+
+**Tests to add:**
+- [test name] — enforces: [invariant]
+
+**Source of truth:**
+- [domain concept] derives from [source]
+
+Proceed with implementation? [yes/no]
+```
