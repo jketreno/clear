@@ -213,7 +213,9 @@ if [[ "$RUN_SETUP" == true ]]; then
   echo "  This will configure clear/autonomy.yml for your project."
   echo "  (Press Ctrl-C to skip and run it later with: ./scripts/setup-clear.sh)"
   echo ""
-  bash "$TARGET_DIR/scripts/setup-clear.sh"
+  # Run CLEAR's own setup-clear.sh (not the target's potentially stale copy)
+  # and pass the target directory so it configures the right project.
+  bash "$CLEAR_ROOT/scripts/setup-clear.sh" "$TARGET_DIR"
 else
   success "Files copied. Run the setup wizard when ready:"
   echo "  cd $TARGET_DIR && ./scripts/setup-clear.sh"

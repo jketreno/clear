@@ -5,13 +5,22 @@
 # Guides you through configuring CLEAR for an existing project.
 # Run this once when adopting CLEAR in a new codebase.
 #
-# Usage: ./scripts/setup-clear.sh
+# Usage:
+#   ./scripts/setup-clear.sh               # configure current project
+#   ./scripts/setup-clear.sh /path/to/proj  # configure a different project
 # =============================================================================
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Accept an explicit project root as the first argument (used by bootstrap-project.sh)
+# so we always run the latest wizard from the CLEAR repo, not the target's stale copy.
+if [[ -n "${1:-}" ]]; then
+  PROJECT_ROOT="$(cd "$1" && pwd)"
+else
+  PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+fi
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
