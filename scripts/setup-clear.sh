@@ -13,6 +13,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLEAR_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Accept an explicit project root as the first argument (used by bootstrap-project.sh)
 # so we always run the latest wizard from the CLEAR repo, not the target's stale copy.
@@ -65,6 +66,35 @@ ask_yn() {
   read -r answer
   answer="${answer:-$default}"
   [[ "$answer" =~ ^[Yy] ]]
+}
+
+# ─── Skill helper ────────────────────────────────────────────────────────────
+
+# get_skill_meta <file> <field>
+# Returns the value of a YAML frontmatter field ("name", "description") from a
+# skill .md file. Falls back to filename-derived name / "# CLEAR Skill:" heading
+# for older skill files that have no frontmatter.
+get_skill_meta() {
+  local file="$1"
+  local field="$2"
+  local first_line
+  first_line=$(head -1 "$file")
+  if [[ "$first_line" == "---" ]]; then
+    awk -v f="${field}:" '
+      NR==1{next}
+      /^---$/{exit}
+      index($0,f)==1{
+        val=substr($0,length(f)+1)
+        sub(/^[[:space:]"'"'"']+/,"",val)
+        sub(/[[:space:]"'"'"']+$/,"",val)
+        print val; exit
+      }
+    ' "$file"
+  elif [[ "$field" == "name" ]]; then
+    basename "$file" .md
+  else
+    awk '/^# CLEAR Skill:/{sub(/^# CLEAR Skill: /,""); print; exit}' "$file"
+  fi
 }
 
 # ─── Step 1: Project name ─────────────────────────────────────────────────────
@@ -236,9 +266,75 @@ echo "  Cursor:          The .cursor/rules/*.mdc files are applied automatically
 echo ""
 echo "See docs/ai-tools/ for detailed setup guides."
 
-# ─── Step 6: First experiment ─────────────────────────────────────────────────
+# ─── Step 6: Install skills ───────────────────────────────────────────────────
 
-header "CLEAR Setup — Step 6: Your First Experiment"
+header "CLEAR Setup — Step 6: Install Skills [optional]"
+
+SKILLS_DIR="$CLEAR_ROOT/templates/skills"
+PROMPTS_DIR="$PROJECT_ROOT/.github/prompts"
+INSTALLED_SKILLS=""
+
+SKILL_FILES=()
+SKILL_NAMES=()
+SKILL_DESCS=()
+for _sf in "$SKILLS_DIR"/*.md; do
+  [[ -f "$_sf" ]] || continue
+  SKILL_FILES+=("$_sf")
+  SKILL_NAMES+=("$(get_skill_meta "$_sf" "name")")
+  SKILL_DESCS+=("$(get_skill_meta "$_sf" "description")")
+done
+
+if [[ ${#SKILL_FILES[@]} -gt 0 ]]; then
+  echo "Available skills (installed to .github/prompts/ for VS Code Copilot):"
+  echo ""
+  for _i in "${!SKILL_FILES[@]}"; do
+    printf "  %d. %s\n" "$((_i+1))" "${SKILL_NAMES[$_i]}"
+    printf "     %s\n" "${SKILL_DESCS[$_i]}"
+    echo ""
+  done
+
+  printf "${CYAN}  Enter numbers to install (space-separated), 'all', or press ENTER to skip: ${NC}" > /dev/tty
+  read -r SKILL_SELECTION < /dev/tty
+  echo ""
+
+  if [[ -n "$SKILL_SELECTION" ]]; then
+    TO_INSTALL=()
+    if [[ "$SKILL_SELECTION" == "all" ]]; then
+      for _i in "${!SKILL_FILES[@]}"; do
+        TO_INSTALL+=("$_i")
+      done
+    else
+      for _token in $SKILL_SELECTION; do
+        if [[ "$_token" =~ ^[0-9]+$ ]]; then
+          _idx=$((_token - 1))
+          if [[ $_idx -ge 0 && $_idx -lt ${#SKILL_FILES[@]} ]]; then
+            TO_INSTALL+=("$_idx")
+          else
+            warn "No skill at position $_token — skipped"
+          fi
+        fi
+      done
+    fi
+
+    if [[ ${#TO_INSTALL[@]} -gt 0 ]]; then
+      mkdir -p "$PROMPTS_DIR"
+      for _idx in "${TO_INSTALL[@]}"; do
+        _name="${SKILL_NAMES[$_idx]}"
+        cp "${SKILL_FILES[$_idx]}" "$PROMPTS_DIR/${_name}.prompt.md"
+        success "Installed: .github/prompts/${_name}.prompt.md"
+        INSTALLED_SKILLS="$INSTALLED_SKILLS $_name"
+      done
+    fi
+  else
+    info "Skipped — copy templates/skills/*.md to .github/prompts/ later"
+  fi
+else
+  info "No skills found in $SKILLS_DIR"
+fi
+
+# ─── Step 7: First experiment ─────────────────────────────────────────────────
+
+header "CLEAR Setup — Step 7: Your First Experiment"
 
 echo "The fastest way to see CLEAR working is to pick ONE existing code"
 echo "review comment that you write every PR."
@@ -258,6 +354,11 @@ header "Setup Complete"
 echo "Created/configured:"
 echo "  ✅ clear/autonomy.yml          — autonomy boundaries"
 echo "  ✅ scripts/verify-ci.sh        — CI enforcement script"
+if [[ -n "$INSTALLED_SKILLS" ]]; then
+  for _s in $INSTALLED_SKILLS; do
+    echo "  ✅ .github/prompts/${_s}.prompt.md"
+  done
+fi
 echo ""
 echo "Next steps:"
 echo "  1. Review clear/autonomy.yml and adjust boundaries for your codebase"
