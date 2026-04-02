@@ -92,20 +92,24 @@ AUTONOMY_ENTRIES=""
 
 add_autonomy_entry() {
   local path level reason
-  path=$(ask "  Path (e.g., src/utils, src/payment)")
+  printf "${CYAN}  Path (e.g., src/utils, src/payment) — leave blank to finish: ${NC}" > /dev/tty
+  read -r path < /dev/tty
+  [[ -z "$path" ]] && return 1   # blank = done
   level=$(ask "  Level (full-autonomy / supervised / humans-only)" "supervised")
-  reason=$(ask "  Reason (why this level?)")
+  reason=$(ask "  Reason (why this level?)" "")
   AUTONOMY_ENTRIES="${AUTONOMY_ENTRIES}
   - path: \"${path}\"
     level: ${level}
     reason: \"${reason}\""
+  return 0
 }
 
-info "Add your first autonomy boundary:"
-add_autonomy_entry
+echo "Enter your autonomy boundaries below (one per prompt)."
+echo "Press ENTER on a blank path to skip — you can edit clear/autonomy.yml later."
+echo ""
 
-while ask_yn "Add another boundary?" "y"; do
-  add_autonomy_entry
+while true; do
+  add_autonomy_entry || break
 done
 
 # Write autonomy.yml
@@ -154,23 +158,28 @@ declare -a SYSTEMS=()
 
 add_source_of_truth() {
   local concept source system
-  concept=$(ask "  Domain concept (e.g., User, Order, Subscription)")
-  source=$(ask "  Source of truth (e.g., database schema, Stripe, protobuf)")
-  system=$(ask "  System/file that defines it (e.g., stripe.subscriptions, schema.prisma)")
+  printf "${CYAN}  Domain concept (e.g., User, Order, Subscription) — leave blank to finish: ${NC}" > /dev/tty
+  read -r concept < /dev/tty
+  [[ -z "$concept" ]] && return 1   # blank = done
+  source=$(ask "  Source of truth (e.g., database schema, Stripe, protobuf)" "")
+  system=$(ask "  System/file that defines it (e.g., stripe.subscriptions, schema.prisma)" "")
   SOURCES_OF_TRUTH="${SOURCES_OF_TRUTH}
   - concept: \"${concept}\"
     source_of_truth: \"${source}\"
     defined_in: \"${system}\""
+  return 0
 }
 
-if ask_yn "Add a source of truth declaration?" "y"; then
-  add_source_of_truth
-  while ask_yn "Add another?" "n"; do
-    add_source_of_truth
-  done
+echo "Declare sources of truth for key domain concepts."
+echo "Press ENTER on a blank concept to skip — you can edit clear/autonomy.yml later."
+echo ""
 
-  # Append to autonomy-adjacent reality file
-  cat >> "$PROJECT_ROOT/clear/autonomy.yml" << REALITY_EOF
+while true; do
+  add_source_of_truth || break
+done
+
+# Append sources of truth to autonomy.yml (always; empty block is harmless)
+cat >> "$PROJECT_ROOT/clear/autonomy.yml" << REALITY_EOF
 
 # =============================================================================
 # Reality Alignment — Sources of Truth
@@ -182,6 +191,7 @@ if ask_yn "Add a source of truth declaration?" "y"; then
 sources_of_truth:${SOURCES_OF_TRUTH}
 REALITY_EOF
 
+if [[ -n "$SOURCES_OF_TRUTH" ]]; then
   success "Added sources of truth to clear/autonomy.yml"
 fi
 
