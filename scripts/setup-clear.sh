@@ -22,7 +22,6 @@ NC='\033[0m'
 info()    { echo -e "${BLUE}ℹ  $1${NC}"; }
 success() { echo -e "${GREEN}✅ $1${NC}"; }
 warn()    { echo -e "${YELLOW}⚠  $1${NC}"; }
-prompt()  { echo -e "${CYAN}?  $1${NC}"; }
 
 header() {
   echo ""

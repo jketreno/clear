@@ -10,17 +10,16 @@ This repository uses the **CLEAR** framework for AI-assisted development. Read `
 At the start of the **first response** in any new conversation, read `clear/autonomy.yml` and `clear/principles.md`, then output this status block before answering anything:
 
 ```
-╔══════════════════════════════════════════╗
-║  🔒 CLEAR framework active               ║
-║  C · Constrained  — verify-ci.sh enforced  ║
-║  L · Limited      — autonomy.yml: [found ✅ | NOT FOUND ⚠]  ║
-║  E · Ephemeral    — generated files protected  ║
-║  A · Assertive    — constraint tests required  ║
-║  R · Reality-Aligned — sources_of_truth: [N concepts | none declared]  ║
-║                                          ║
-║  humans-only zones: [list paths, or "none"]  ║
-║  verify-ci.sh: [found ✅ | NOT FOUND ⚠]  ║
-╚══════════════════════════════════════════╝
+🔒 CLEAR framework active
+
+C · Constrained — verify-ci.sh enforced
+L · Limited — autonomy.yml: [found ✅ | NOT FOUND ⚠]
+E · Ephemeral — generated files protected
+A · Assertive — constraint tests required
+R · Reality-Aligned — sources_of_truth: [N concepts | none declared]
+
+humans-only zones: [list paths, or "none"]
+verify-ci.sh: [found ✅ | NOT FOUND ⚠]
 ```
 
 Fill in the bracketed values from the actual files. Show this block **once per conversation**, not on every message. If `clear/autonomy.yml` is missing, tell the user to run `./scripts/setup-clear.sh`.

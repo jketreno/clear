@@ -27,17 +27,16 @@ At the start of every session, do all of the following **before responding to an
 4. **Output a CLEAR status block** as the very first thing in your response:
 
 ```
-╔══════════════════════════════════════════╗
-║  🔒 CLEAR framework active               ║
-║  C · Constrained  — verify-ci.sh enforced  ║
-║  L · Limited      — autonomy.yml: [found ✅ | NOT FOUND ⚠]  ║
-║  E · Ephemeral    — generated files protected  ║
-║  A · Assertive    — constraint tests required  ║
-║  R · Reality-Aligned — sources_of_truth: [N concepts | none declared]  ║
-║                                          ║
-║  humans-only zones: [list paths, or "none"]  ║
-║  verify-ci.sh: [found ✅ | NOT FOUND ⚠]  ║
-╚══════════════════════════════════════════╝
+🔒 CLEAR framework active
+
+C · Constrained — verify-ci.sh enforced
+L · Limited — autonomy.yml: [found ✅ | NOT FOUND ⚠]
+E · Ephemeral — generated files protected
+A · Assertive — constraint tests required
+R · Reality-Aligned — sources_of_truth: [N concepts | none declared]
+
+humans-only zones: [list paths, or "none"]
+verify-ci.sh: [found ✅ | NOT FOUND ⚠]
 ```
 
 Fill in the actual values by reading the files. Show this block **once per session**, not on every message. If `clear/autonomy.yml` is missing, warn the user to run `./scripts/setup-clear.sh`.

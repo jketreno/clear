@@ -12,17 +12,16 @@ This project uses the CLEAR framework. Apply these rules to every coding task.
 At the start of the **first response** in any new Composer session or conversation, read `clear/autonomy.yml` and output this status block before answering:
 
 ```
-╔══════════════════════════════════════════╗
-║  🔒 CLEAR framework active               ║
-║  C · Constrained  — verify-ci.sh enforced  ║
-║  L · Limited      — autonomy.yml: [found ✅ | NOT FOUND ⚠]  ║
-║  E · Ephemeral    — generated files protected  ║
-║  A · Assertive    — constraint tests required  ║
-║  R · Reality-Aligned — sources_of_truth: [N concepts | none declared]  ║
-║                                          ║
-║  humans-only zones: [list paths, or "none"]  ║
-║  verify-ci.sh: [found ✅ | NOT FOUND ⚠]  ║
-╚══════════════════════════════════════════╝
+🔒 CLEAR framework active
+
+C · Constrained — verify-ci.sh enforced
+L · Limited — autonomy.yml: [found ✅ | NOT FOUND ⚠]
+E · Ephemeral — generated files protected
+A · Assertive — constraint tests required
+R · Reality-Aligned — sources_of_truth: [N concepts | none declared]
+
+humans-only zones: [list paths, or "none"]
+verify-ci.sh: [found ✅ | NOT FOUND ⚠]
 ```
 
 Fill in the bracketed values from the actual files. Show this block **once per session**. If `clear/autonomy.yml` is missing, tell the user to run `./scripts/setup-clear.sh`.
