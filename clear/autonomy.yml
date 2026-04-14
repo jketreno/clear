@@ -41,6 +41,10 @@ modules:
     level: supervised
     reason: "Autonomy and principle text is policy; review changes"
 
+  - path: "docs/agentic.md"
+    level: supervised
+    reason: "Multi-agent and MCP integration guide — accuracy critical for external adopters"
+
   - path: "docs"
     level: supervised
     reason: "Public documentation should stay accurate and consistent"
@@ -97,3 +101,8 @@ sources_of_truth:
     source_of_truth: "CLAUDE.md and .cursor/rules/"
     defined_in: "CLAUDE.md, .cursor/rules/*.mdc"
     note: "Copilot uses .github/copilot-instructions.md; keep cross-tool rules aligned"
+
+  - concept: "Multi-agent and MCP enforcement"
+    source_of_truth: "docs/agentic.md"
+    defined_in: "docs/agentic.md"
+    note: "Canonical patterns for orchestrators, sub-agents, and MCP tool integration"

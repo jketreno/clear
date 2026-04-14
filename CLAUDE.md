@@ -144,6 +144,8 @@ Wait for approval before writing code.
 | `templates/architecture-tests/` | Architecture test examples |
 | `templates/skills/` | Reusable regeneration skill files |
 | `docs/` | Full documentation |
+| `docs/agentic.md` | Multi-agent pipelines + MCP integration guide |
+| `templates/skills/mcp-server.md` | Skill to scaffold a CLEAR MCP server |
 
 ---
 

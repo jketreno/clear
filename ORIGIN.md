@@ -12,7 +12,7 @@ The problem isn't the AI. The problem is your architecture rules exist in people
 
 ## What Actually Works: CLEAR
 
-I've been looking at how teams are handling this. There's a pattern emerging that makes sense. I'm calling it **CLEAR (Constrained, Limited, Ephemeral, Assertive, Reality-Aligned)** (to be honest, I provided my tenants to an LLM and asked it for an acronymn, and it came up with CLEAR):
+I've been looking at how teams are handling this. There's a pattern emerging that makes sense. I'm calling it **CLEAR (Constrained, Limited, Ephemeral, Assertive, Reality-Aligned)** (the acronym itself was AI-generated from my tenets — a fitting origin for a framework about constraint-driven generation):
 
 - **C**onstrained - Make your rules enforced, not suggested
 - **L**imited - Define where AI can work alone vs where you need humans  
@@ -113,7 +113,7 @@ You never see the code with console.log in it. The AI caught and fixed it before
 Take it further - your team has a rule "all API endpoints need rate limiting." Stop catching this in review!
 
 ```javascript
-// psuedo code tests/architecture/api-rules.test.js
+// pseudo code tests/architecture/api-rules.test.js
 describe('API Architecture Rules', () => {
   test('all endpoints have rate limiting', () => {
     const endpoints = getAllApiEndpoints();
@@ -511,11 +511,11 @@ Either way, the solution is the same: **make the implicit explicit and enforceab
 
 ## The Integration Problem
 
-There's a methodology called BMad (Breakthrough Method for Agile AI-Driven Development) that's getting traction. It's basically a structured workflow with specialized AI agents - one for product management, one for architecture, one for development, one for QA.
+There's a methodology called BMad (Breakthrough Method for Agile AI-Driven Development) that's getting traction — it's a structured multi-agent workflow with specialized agents for product management, architecture, development, and QA.
 
 It works. The problem is the agents can still generate code that violates your architecture even while following the workflow perfectly.
 
-That's where CLEAR matters. BMad gives you the process structure. CLEAR gives you the architectural guardrails.
+That's where CLEAR matters. Multi-agent workflows give you process structure. CLEAR gives you the architectural guardrails. The same applies to any orchestrated pipeline: Claude Code agents, Cursor Composer, GitHub Copilot Workspace, LangGraph, CrewAI — the framework doesn't matter. Without enforced constraints, every agent is a potential source of architectural drift.
 
 Together: structured agents that can't break your design rules even if they try.
 
@@ -537,7 +537,7 @@ Want to see a complete working example? Check out the CLEAR bootstrap project at
 
 ## What I'm Seeing Work
 
-Teams doing this are reporting:
+Based on conversations with teams I've worked with and early CLEAR adopters:
 - 60-80% of infrastructure code AI-generated
 - 3-5x velocity on well-defined modules  
 - 70% drop in review time (reviewing tests, not implementations)
@@ -582,6 +582,8 @@ Your current practices + CLEAR guardrails + AI building both = you keep your arc
 
 ---
 
-Side note: This post itself was generated using CLEAR principles. I gave Claude precise constraints (write like James would, based on email examples), clear boundaries (LinkedIn format), and verification criteria (does it sound like me?). Generated content, reviewed for accuracy, iterated. The relationship between constraint-giver (me) and generator (AI) is exactly what CLEAR describes.
+One last thing worth saying: this article was written using CLEAR principles. I gave Claude precise constraints (write like James would, based on my own writing samples), clear boundaries (long-form technical article, not marketing copy), and verification criteria (does it sound like me? does every claim match what I actually observed?). I reviewed it, iterated on it, and cut what didn't hold up. The relationship between constraint-giver and generator is exactly what CLEAR describes — and it worked here the same way it works in code.
+
+The acronym came from the same process. I gave an LLM my tenets, it gave me CLEAR. That's not a confession. That's the point.
 
 What's your most annoying code review comment? That's probably your first constraint. Ask AI to turn it into a test and add it to your verify-ci.sh script.

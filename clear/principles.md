@@ -80,6 +80,19 @@ You: review the diff, then commit
 
 ---
 
+## Multi-Agent and MCP
+
+CLEAR principles apply equally to orchestrated multi-agent pipelines. Key rules:
+
+- **Orchestrators:** check `clear/autonomy.yml` before delegating any subtask; never delegate a `humans-only` path
+- **Sub-agents:** run `./scripts/verify-ci.sh` before reporting a subtask complete, regardless of AI provider
+- **Headless agents:** read `clear/autonomy.yml` at startup; exit non-zero if verification fails — let CI catch it
+- **MCP:** expose `verify-ci.sh` and `autonomy.yml` as MCP tools (`clear_verify`, `clear_check_autonomy`) for structured agent access
+
+See [docs/agentic.md](../docs/agentic.md) for full patterns and the `templates/skills/mcp-server.md` skill to scaffold a CLEAR MCP server.
+
+---
+
 ## Files in This Repository
 
 | File | Purpose |
@@ -96,3 +109,5 @@ You: review the diff, then commit
 | `.github/copilot-instructions.md` | GitHub Copilot / VS Code workspace config |
 | `CLAUDE.md` | Claude Code configuration (auto-read at startup) |
 | `.cursor/rules/` | Cursor AI rules (MDC format) |
+| `docs/agentic.md` | Multi-agent pipelines and MCP integration guide |
+| `templates/skills/mcp-server.md` | Skill to scaffold a CLEAR MCP server |

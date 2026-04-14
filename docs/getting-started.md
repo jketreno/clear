@@ -23,7 +23,8 @@ cd clear
 Look at the top-level structure:
 
 ```
-scripts/          — verify-ci.sh (enforcement), setup-clear.sh (wizard)
+scripts/          — verify-ci.sh (enforcement), setup-clear.sh (wizard),
+                    bootstrap-project.sh (bootstrap), update-project.sh (sync updates)
 clear/            — autonomy.yml (boundaries), principles.md (reference)
 templates/        — copy-paste starting points for architecture tests and skills
 docs/             — this documentation
@@ -66,6 +67,13 @@ The setup wizard will:
 1. Ask which modules are full-autonomy / supervised / humans-only
 2. Ask you to declare sources of truth for key domain concepts
 3. Create a configured `clear/autonomy.yml`
+
+**Keeping your project up to date:** As the CLEAR seed evolves, run `update-project.sh` from the seed repo to sync improvements back into your project:
+
+```bash
+# From the clear/ seed repository root:
+./scripts/update-project.sh /path/to/your-project
+```
 
 ---
 
@@ -222,6 +230,7 @@ run_check "Architecture tests" "npx jest tests/architecture/ 2>&1"
 | VS Code / Copilot setup details | [docs/ai-tools/vscode-copilot.md](ai-tools/vscode-copilot.md) |
 | Claude Code setup details | [docs/ai-tools/claude.md](ai-tools/claude.md) |
 | Cursor setup details | [docs/ai-tools/cursor.md](ai-tools/cursor.md) |
+| Multi-agent pipelines & MCP | [docs/agentic.md](agentic.md) |
 
 ---
 

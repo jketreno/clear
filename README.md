@@ -4,7 +4,7 @@
 
 > **C**onstrained · **L**imited · **E**phemeral · **A**ssertive · **R**eality-Aligned
 
-CLEAR keeps your architecture rules **enforced, not suggested** when working with AI coding tools. One script. Five principles. Works with GitHub Copilot, Claude Code, and Cursor.
+CLEAR keeps your architecture rules **enforced, not suggested** when working with AI coding tools — from single-session assistants to multi-agent pipelines. One script. Five principles. Works with GitHub Copilot, Claude Code, Cursor, and MCP-compatible agent frameworks.
 
 ---
 
@@ -181,6 +181,7 @@ scripts/
   verify-ci.sh          — The enforcement script. Run this. Always.
   setup-clear.sh        — Interactive setup wizard
   bootstrap-project.sh  — Copy CLEAR into an existing project
+  update-project.sh     — Sync a bootstrapped project with the latest CLEAR seed
 
 clear/
   autonomy.yml          — Module boundaries (full-autonomy / supervised / humans-only)
@@ -221,4 +222,5 @@ docs/                   — Full documentation
 | VS Code / Copilot setup | [docs/ai-tools/vscode-copilot.md](docs/ai-tools/vscode-copilot.md) |
 | Claude Code setup | [docs/ai-tools/claude.md](docs/ai-tools/claude.md) |
 | Cursor setup | [docs/ai-tools/cursor.md](docs/ai-tools/cursor.md) |
+| Agentic workflows & MCP | [docs/agentic.md](docs/agentic.md) |
 | Origin & philosophy | [ORIGIN.md](ORIGIN.md) |

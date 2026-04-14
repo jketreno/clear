@@ -6,7 +6,7 @@
 
 ## Prerequisites
 
-- Claude Code installed (`npm install -g @anthropic-ai/claude-code` or equivalent)
+- Claude Code installed — see the [official installation guide](https://docs.anthropic.com/en/docs/claude-code/getting-started) for your platform (VS Code extension, JetBrains plugin, or standalone CLI)
 - CLEAR files copied into your project (see [docs/getting-started.md](../getting-started.md))
 
 ---
@@ -182,6 +182,45 @@ Then use it as:
 ```
 /project:sync-types
 ```
+
+---
+
+## MCP Integration (Advanced)
+
+CLEAR's enforcement primitives — `verify-ci.sh` and `autonomy.yml` — can be surfaced as [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) tools, making them available to any MCP-compatible agent or orchestrator as structured tool calls rather than raw bash invocations.
+
+### Why expose CLEAR over MCP?
+
+When running multi-agent pipelines (orchestrator + sub-agents, parallel code generation, etc.), individual agents may not share a session context. MCP tools are stateless and discoverable — any agent in the pipeline can call `clear_verify` or `clear_check_autonomy` without needing a loaded CLAUDE.md.
+
+### Available as MCP tools
+
+| MCP Tool | Maps to | Description |
+|----------|---------|-------------|
+| `clear_verify` | `./scripts/verify-ci.sh` | Run all CI checks; returns structured pass/fail + error list |
+| `clear_check_autonomy` | `clear/autonomy.yml` lookup | Returns autonomy level for a given file path |
+| `clear_list_humans_only` | `clear/autonomy.yml` filter | Lists all `humans-only` paths — safe to call before any batch operation |
+
+### Setting up a CLEAR MCP server
+
+Use the skill template at `templates/skills/mcp-server.md` to generate a minimal MCP server that exposes these tools for your project:
+
+```
+Follow templates/skills/mcp-server.md to scaffold a CLEAR MCP server
+for this project. The server should expose:
+- clear_verify (runs scripts/verify-ci.sh)
+- clear_check_autonomy (reads clear/autonomy.yml)
+- clear_list_humans_only (filters humans-only paths)
+```
+
+Once running, register it in your Claude Code settings or agent configuration as a local MCP server.
+
+### Multi-agent workflow with CLEAR
+
+See [docs/agentic.md](../agentic.md) for a complete guide on using CLEAR with multi-agent pipelines, including:
+- How autonomy boundaries apply across agent chains
+- Enforcement patterns for orchestrator + sub-agent workflows
+- Pre-flight checks before delegating to a sub-agent
 
 ---
 
