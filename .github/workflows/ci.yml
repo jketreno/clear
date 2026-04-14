@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: CLEAR Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make scripts executable
+        run: chmod +x scripts/*.sh
+
+      - name: CLEAR — Verify CI
+        run: ./scripts/verify-ci.sh
+
+      - name: Shellcheck (scripts quality)
+        run: shellcheck --severity=error scripts/*.sh

@@ -1,5 +1,7 @@
 ![CLEAR](assets/clear.png)
 
+[![CI](https://github.com/jketreno/clear/actions/workflows/ci.yml/badge.svg)](https://github.com/jketreno/clear/actions/workflows/ci.yml)
+
 # CLEAR — AI-Assisted Development Framework
 
 > **C**onstrained · **L**imited · **E**phemeral · **A**ssertive · **R**eality-Aligned
