@@ -11,7 +11,7 @@ Many systems don't have a single source of truth. They have:
 - A database schema (what's stored)
 - An API spec (what's served)
 - A frontend model (what's displayed)
-- An external system (Stripe, Salesforce, Auth0) that actually decides state
+- An external system (OAuth/IAM provider, config DB) that actually decides state
 - Someone's head (what the team thinks the rules are)
 
 When these conflict, AI picks one — often the wrong one. Generated code that disagrees with reality isn't caught by tests (because the tests were written against the same wrong assumption).
@@ -29,12 +29,12 @@ For any domain concept, answer:
 
 If those three answers point to different places → you have drift.
 
-**Example — Subscription:**
-- Defined: local database schema
-- Validated: backend API handler
-- Enforced: Stripe
+**Example — User Permissions:**
+- Defined: local database roles table
+- Validated: backend middleware
+- Enforced: OAuth/IAM provider
 
-If Stripe says the subscription is cancelled but your local DB says it's active, what's true? Stripe is — because Stripe controls what you can actually charge. Your local DB is wrong. Anyone who reads the local DB is getting wrong information.
+If the IAM provider says a user's admin role was revoked but your local DB still says they're an admin, what's true? The IAM provider is — because it controls what the user can actually access. Your local DB is wrong. Anyone who reads the local DB is granting permissions that shouldn't exist.
 
 ---
 
@@ -44,11 +44,11 @@ In `clear/autonomy.yml`, add a `sources_of_truth` section:
 
 ```yaml
 sources_of_truth:
-  - concept: "Subscription"
-    source_of_truth: "Stripe"
-    defined_in: "stripe.subscriptions"
+  - concept: "User permissions"
+    source_of_truth: "OAuth/IAM provider"
+    defined_in: "idp.users.roles"
     note: |
-      If local DB and Stripe disagree, Stripe is correct.
+      If local DB and IAM provider disagree, the IAM provider is correct.
       Sync jobs run hourly. Webhooks handle real-time updates.
 
   - concept: "User"
@@ -58,19 +58,19 @@ sources_of_truth:
       The Prisma schema is the canonical User definition.
       API response types are derived from it.
 
-  - concept: "Permissions"
+  - concept: "Service config"
     source_of_truth: "protobuf definitions"
-    defined_in: "proto/auth/permissions.proto"
+    defined_in: "proto/config/service.proto"
     note: |
-      The permission flags in the proto are authoritative.
+      The config flags in the proto are authoritative.
       All other representations derive from proto generation.
 
-  - concept: "Product catalog"
-    source_of_truth: "Stripe"
-    defined_in: "stripe.products, stripe.prices"
+  - concept: "Roles and groups"
+    source_of_truth: "OAuth/IAM provider"
+    defined_in: "idp.groups"
     note: |
-      Product names, descriptions, and prices are managed in Stripe.
-      Local cache is read-only and must sync before display.
+      Group membership and role assignments are managed in the IAM provider.
+      Local cache is read-only and must sync before access checks.
 ```
 
 AI tools are configured to read this section before generating code for any declared concept. They derive from the source, not from existing code.
@@ -87,15 +87,15 @@ Reality tests verify that your local implementation actually matches the externa
 - Guard with `if (NODE_ENV !== 'staging') throw` to prevent production data access
 - Compare normalized representations (timestamps, sorted arrays, etc.)
 
-See `templates/skills/reality-test.md` for complete examples for Stripe and database schemas.
+See `templates/skills/reality-test.md` for complete examples for OAuth/IAM and database schemas.
 
 **Where to put them:**
 ```
 tests/
   reality/              ← Reality tests live here
-    stripe-subscriptions.reality.test.ts
+    iam-permissions.reality.test.ts
     db-schema.reality.test.ts
-    permissions.reality.test.ts
+    api-contract.reality.test.ts
 ```
 
 **How to run them:**
@@ -111,15 +111,15 @@ npm run test:reality
 
 ## Reality Test Examples
 
-### Stripe subscription alignment
+### IAM permission alignment
 
 ```typescript
-test('local subscription status matches Stripe', async () => {
-  const stripeSub = await stripe.subscriptions.retrieve(testSubId);
-  const local = await getSubscription(testSubId);
+test('local user roles match IAM provider', async () => {
+  const idpUser = await iam.users.get(testUserId);
+  const local = await getUserRoles(testUserId);
   
-  expect(local?.status).toBe(stripeSub.status);
-  expect(local?.cancelAtPeriodEnd).toBe(stripeSub.cancel_at_period_end);
+  expect(local?.roles.sort()).toEqual(idpUser.roles.sort());
+  expect(local?.isActive).toBe(idpUser.enabled);
   // Don't compare timestamps directly — minor sync lag is expected
 });
 ```
@@ -140,8 +140,8 @@ BEGIN
   
   ASSERT (
     SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_name = 'subscriptions' AND column_name = 'stripe_id'
-  ) = 1, 'subscriptions.stripe_id column must exist';
+    WHERE table_name = 'user_roles' AND column_name = 'idp_role_id'
+  ) = 1, 'user_roles.idp_role_id column must exist';
 END $$;
 ```
 
@@ -166,10 +166,10 @@ test('API response matches declared OpenAPI schema', async () => {
 Ask your AI to run the three-question diagnostic on a domain concept:
 
 ```
-Run the CLEAR reality-alignment diagnostic on our Subscription model:
-1. Find where Subscription is defined in our codebase
-2. Find where subscription data is validated
-3. Find where subscription state is actually enforced (Stripe? local DB? middleware?)
+Run the CLEAR reality-alignment diagnostic on our User Permissions model:
+1. Find where user permissions are defined in our codebase
+2. Find where permission data is validated
+3. Find where permissions are actually enforced (IAM provider? local DB? middleware?)
 
 List any discrepancies you find between these three places.
 Report locations where Subscription fields exist in one place but not another.
@@ -186,12 +186,12 @@ Add explicit conflict-resolution rules to `clear/autonomy.yml`:
 ```yaml
 sources_of_truth:
   - concept: "User email"
-    source_of_truth: "Auth0"
-    defined_in: "auth0.users[email]"
+    source_of_truth: "OAuth/IAM provider"
+    defined_in: "idp.users[email]"
     conflict_resolution: |
-      Auth0 is the canonical email source.
+      The IAM provider is the canonical email source.
       Our DB stores a cached copy for performance.
-      If they differ, schedule a sync job — never update Auth0 from our DB.
+      If they differ, schedule a sync job — never update the IdP from our DB.
 ```
 
 AI tools read this and apply the correct resolution when generating sync logic, webhook handlers, or data migration code.

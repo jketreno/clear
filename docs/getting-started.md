@@ -190,7 +190,7 @@ Pick ONE of these — the one that matches your biggest current pain point:
 
 ### Option D: Write a reality test [R]
 
-1. Pick one external dependency (database, Stripe, external API)
+1. Pick one external dependency (database, OAuth/IAM provider, external API)
 2. Ask your AI:
    ```
    Write a reality test using templates/skills/reality-test.md

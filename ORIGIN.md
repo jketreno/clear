@@ -233,7 +233,7 @@ export const UserSchema = z.object({
 
 The first time you write the rules file takes work. Every subsequent model follows those rules automatically. When you add a field to User in Python, you ask AI to regenerate the TypeScript types - it reads the rules and keeps everything in sync.
 
-The AI isn't running a build script - it's reading your constraints and generating code that respects them across both languages. That's way more powerful than traditional code generation because the AI understands the semantic intent, not just syntax transformation.
+The AI isn't running a build script - it's reading your constraints and generating code that respects them across both languages. That's way more powerful than traditional code generation because the AI understands the meaning, not just the syntax.
 
 ### **[A] Assertive** - Write Tests That Define What Must Always Be True
 
@@ -365,12 +365,12 @@ When that happens, AI picks one--sometimes the wrong one.
 
 **Actionable steps:**
 
-1. Pick one domain concept such as `User`, `Order`, or `Subscription`.
+1. Pick one domain concept such as `User`, `Device`, or `ServiceConfig`.
 2. Identify the real source of truth:
    - database schema
    - protobuf/OpenAPI contract
-   - Stripe
-   - Salesforce
+   - identity provider or IAM system
+   - configuration management database
    - whatever system actually decides reality
 3. Make everything else derive from it.
 4. Tell the AI explicitly what wins when systems disagree.
@@ -378,22 +378,22 @@ When that happens, AI picks one--sometimes the wrong one.
 For example:
 
 ```text
-The source of truth for subscriptions is Stripe.
-If local code disagrees, Stripe is correct.
+The source of truth for user permissions is the identity provider.
+If local code disagrees, the IdP is correct.
 ```
 
 Then write **reality tests** to verify alignment:
 
 ```ts
-it('matches Stripe subscription state', async () => {
-  const stripeSub = await stripe.subscriptions.retrieve(id);
-  const local = await getSubscription(id);
+it('matches identity provider permission state', async () => {
+  const idpPerms = await idp.users.getPermissions(userId);
+  const local = await getPermissions(userId);
 
-  expect(normalize(local)).toEqual(normalize(stripeSub));
+  expect(normalize(local)).toEqual(normalize(idpPerms));
 });
 ```
 
-Run these in staging or nightly. They don't need to run on every PR. The goal is to catch drift between your implementation and the real world before that drift becomes institutionalized.
+Run these in staging or nightly. They don't need to run on every PR. The goal is to catch drift between your implementation and the real world before that drift becomes the new normal.
 
 A simple exercise that reveals a lot--pick one domain concept and answer three questions:
 
@@ -537,12 +537,7 @@ Want to see a complete working example? Check out the CLEAR bootstrap project at
 
 ## What I'm Seeing Work
 
-Based on conversations with teams I've worked with and early CLEAR adopters:
-- 60-80% of infrastructure code AI-generated
-- 3-5x velocity on well-defined modules  
-- 70% drop in review time (reviewing tests, not implementations)
-- Architecture drift basically eliminated
-- Near-zero CI/CD failures (issues caught and fixed locally by AI)
+In my own work and across teams I've worked with, the pattern is consistent: once architecture rules are enforced rather than suggested, 60-80% of infrastructure code becomes safely AI-generated. Well-constrained modules see 3-5x velocity gains. Review time drops dramatically — you're reviewing constraints and tests, not implementations. Architecture drift drops to near zero because the build catches violations before humans ever see them. CI/CD failures become rare — issues are caught and fixed locally by AI before code is ever pushed.
 
 But also: more time spent upfront defining contracts and boundaries. This isn't free. You're trading code review time for architecture definition time.
 

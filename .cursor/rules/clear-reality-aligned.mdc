@@ -18,13 +18,13 @@ Every domain concept has one authoritative source. Everything else derives from 
 ```yaml
 # Example entry in clear/autonomy.yml
 sources_of_truth:
-  - concept: "Subscription"
-    source_of_truth: "Stripe"
-    defined_in: "stripe.subscriptions"
-    note: "If local DB disagrees with Stripe, Stripe is correct"
+  - concept: "User permissions"
+    source_of_truth: "OAuth/IAM provider"
+    defined_in: "idp.users.roles"
+    note: "If local DB disagrees with IAM provider, the IdP is correct"
 ```
 
-When implementing anything touching `Subscription`: read the Stripe source, not the local DB or existing code.
+When implementing anything touching `User permissions`: read the IAM provider source, not the local DB or existing code.
 
 ## Writing Reality Tests
 
@@ -32,11 +32,11 @@ For each declared source of truth, propose a reality test that verifies alignmen
 
 ```ts
 // Run in staging/nightly — verifies local model matches external source
-it('local subscription matches Stripe state', async () => {
-  const stripeSubscription = await stripe.subscriptions.retrieve(testSubId);
-  const localSubscription = await getSubscription(testSubId);
-  
-  expect(normalize(localSubscription)).toMatchObject(normalize(stripeSubscription));
+it('local user roles match IAM provider', async () => {
+  const idpUser = await iam.users.get(testUserId);
+  const localRoles = await getUserRoles(testUserId);
+
+  expect(normalize(localRoles)).toMatchObject(normalize(idpUser));
 });
 ```
 

@@ -191,8 +191,8 @@ add_source_of_truth() {
   printf "${CYAN}  Domain concept (e.g., User, Order, Subscription) — leave blank to finish: ${NC}" > /dev/tty
   read -r concept < /dev/tty
   [[ -z "$concept" ]] && return 1   # blank = done
-  source=$(ask "  Source of truth (e.g., database schema, Stripe, protobuf)" "")
-  system=$(ask "  System/file that defines it (e.g., stripe.subscriptions, schema.prisma)" "")
+  source=$(ask "  Source of truth (e.g., database schema, OAuth/IAM provider, protobuf)" "")
+  system=$(ask "  System/file that defines it (e.g., idp.users, schema.prisma)" "")
   SOURCES_OF_TRUTH="${SOURCES_OF_TRUTH}
   - concept: \"${concept}\"
     source_of_truth: \"${source}\"

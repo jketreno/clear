@@ -16,7 +16,7 @@
 
 Apply when a user says:
 - "add a reality test for [service]"
-- "verify [Stripe / database / external API] alignment"
+- "verify [OAuth/IAM / database / external API] alignment"
 - "we think our [concept] is drifting from [source]"
 - Adding a new `sources_of_truth` entry to `clear/autonomy.yml`
 
@@ -48,113 +48,107 @@ Reality tests live in `tests/reality/` and run in staging CI only:
 
 ---
 
-## Stripe Subscription Reality Test
+## IAM Permission Reality Test
 
 ```typescript
-// tests/reality/stripe-subscriptions.reality.test.ts
+// tests/reality/iam-permissions.reality.test.ts
 
 /**
- * Reality Test: Local subscriptions match Stripe state
- * =====================================================
- * Source of truth: Stripe (declared in clear/autonomy.yml)
+ * Reality Test: Local user roles match IAM provider state
+ * ========================================================
+ * Source of truth: OAuth/IAM provider (declared in clear/autonomy.yml)
  * Runs: staging CI, nightly
  *
- * This test verifies that our local subscription records accurately
- * reflect the state in Stripe. If they diverge, Stripe is correct.
+ * This test verifies that our local permission records accurately
+ * reflect the state in the IAM provider. If they diverge, the IdP is correct.
  */
 
-import Stripe from 'stripe';
-import { getSubscription } from '../../src/services/subscription.service';
-import { testSubscriptionIds } from '../fixtures/reality-seeds';
+import { IAMClient } from '../../src/infrastructure/iam-client';
+import { getUserRoles } from '../../src/services/permission.service';
+import { testUserIds } from '../fixtures/reality-seeds';
 
 // Only run in staging — never against production data
 if (process.env.NODE_ENV !== 'staging') {
   throw new Error('Reality tests must only run in staging environment');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
+const iam = new IAMClient({
+  endpoint: process.env.IAM_ENDPOINT!,
+  clientSecret: process.env.IAM_CLIENT_SECRET!,
 });
 
 /** Normalize both representations to a comparable shape */
-function normalizeSubscription(sub: {
-  status: string;
-  currentPeriodEnd: Date | number;
-  planId: string;
-  cancelAtPeriodEnd: boolean;
+function normalizePermissions(perms: {
+  roles: string[];
+  isActive: boolean;
+  groups: string[];
 }) {
   return {
-    status: sub.status,
-    // Normalize timestamps to Unix seconds regardless of source
-    currentPeriodEnd:
-      sub.currentPeriodEnd instanceof Date
-        ? Math.floor(sub.currentPeriodEnd.getTime() / 1000)
-        : sub.currentPeriodEnd,
-    planId: sub.planId,
-    cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+    // Sort arrays for stable comparison
+    roles: [...perms.roles].sort(),
+    isActive: perms.isActive,
+    groups: [...perms.groups].sort(),
   };
 }
 
-describe('Stripe Subscription Reality Alignment', () => {
-  let stripeSubscriptions: Map<string, Stripe.Subscription>;
+describe('IAM Permission Reality Alignment', () => {
+  let idpUsers: Map<string, { roles: string[]; enabled: boolean; groups: string[] }>;
 
   beforeAll(async () => {
-    stripeSubscriptions = new Map();
-    // Fetch all test subscriptions from Stripe
-    for (const id of testSubscriptionIds) {
-      const sub = await stripe.subscriptions.retrieve(id);
-      stripeSubscriptions.set(id, sub);
+    idpUsers = new Map();
+    // Fetch all test users from IAM provider
+    for (const id of testUserIds) {
+      const user = await iam.users.get(id);
+      idpUsers.set(id, user);
     }
   });
 
-  test('local subscription status matches Stripe for all test IDs', async () => {
+  test('local user roles match IAM provider for all test IDs', async () => {
     const drifts: string[] = [];
 
-    for (const [id, stripeSub] of stripeSubscriptions) {
-      const local = await getSubscription(id);
+    for (const [id, idpUser] of idpUsers) {
+      const local = await getUserRoles(id);
       if (!local) {
-        drifts.push(`  ${id}: exists in Stripe but NOT in local DB`);
+        drifts.push(`  ${id}: exists in IAM provider but NOT in local DB`);
         continue;
       }
 
-      const stripeNorm = normalizeSubscription({
-        status: stripeSub.status,
-        currentPeriodEnd: stripeSub.current_period_end,
-        planId: stripeSub.items.data[0]?.plan.id ?? '',
-        cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
+      const idpNorm = normalizePermissions({
+        roles: idpUser.roles,
+        isActive: idpUser.enabled,
+        groups: idpUser.groups,
       });
 
-      const localNorm = normalizeSubscription({
-        status: local.status,
-        currentPeriodEnd: local.currentPeriodEnd,
-        planId: local.planId,
-        cancelAtPeriodEnd: local.cancelAtPeriodEnd,
+      const localNorm = normalizePermissions({
+        roles: local.roles,
+        isActive: local.isActive,
+        groups: local.groups,
       });
 
-      if (JSON.stringify(stripeNorm) !== JSON.stringify(localNorm)) {
+      if (JSON.stringify(idpNorm) !== JSON.stringify(localNorm)) {
         drifts.push(
           `  ${id}: DRIFT DETECTED\n` +
-          `    Stripe: ${JSON.stringify(stripeNorm)}\n` +
-          `    Local:  ${JSON.stringify(localNorm)}`
+          `    IAM:   ${JSON.stringify(idpNorm)}\n` +
+          `    Local: ${JSON.stringify(localNorm)}`
         );
       }
     }
 
     if (drifts.length > 0) {
       throw new Error(
-        `Subscription drift detected (Stripe is the source of truth):\n\n` +
+        `Permission drift detected (IAM provider is the source of truth):\n\n` +
         drifts.join('\n\n') +
         `\n\nRun the sync job or investigate the webhook handler.`
       );
     }
   });
 
-  test('local DB has no subscriptions that do not exist in Stripe', async () => {
-    // Check for "ghost" subscriptions — local records with no Stripe counterpart
-    for (const id of testSubscriptionIds) {
-      const local = await getSubscription(id);
-      if (local && !stripeSubscriptions.has(id)) {
-        throw new Error(`Ghost subscription found: ${id} exists locally but not in Stripe`);
+  test('local DB has no role grants that do not exist in IAM provider', async () => {
+    // Check for "ghost" permissions — local records with no IAM counterpart
+    for (const id of testUserIds) {
+      const local = await getUserRoles(id);
+      if (local && !idpUsers.has(id)) {
+        throw new Error(`Ghost permission found: ${id} has roles locally but not in IAM provider`);
       }
     }
   });
@@ -231,7 +225,7 @@ describe('Database Schema Alignment', () => {
 When asked to create a reality test, follow this process:
 
 1. **Identify the source of truth** from `clear/autonomy.yml` → `sources_of_truth`
-2. **Fetch the canonical state** from the external system (Stripe, database, external API)
+2. **Fetch the canonical state** from the external system (IAM provider, database, external API)
 3. **Fetch the local state** from your service/database
 4. **Normalize both** to a comparable structure (strip timestamps, sort arrays, etc.)
 5. **Compare** — flag any differences as drift
@@ -266,6 +260,7 @@ jobs:
         run: npm run test:reality
         env:
           NODE_ENV: staging
-          STRIPE_SECRET_KEY: ${{ secrets.STAGING_STRIPE_SECRET_KEY }}
+          IAM_ENDPOINT: ${{ secrets.STAGING_IAM_ENDPOINT }}
+          IAM_CLIENT_SECRET: ${{ secrets.STAGING_IAM_CLIENT_SECRET }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
 ```
