@@ -2,15 +2,16 @@
 # =============================================================================
 # CLEAR update-project.sh — Bring a bootstrapped project to the latest CLEAR
 # =============================================================================
-# Updates agent configs, CLEAR scripts, and previously-installed skills.
-# Does NOT overwrite clear/autonomy.yml (your project config) or
-# scripts/verify-ci.sh (your CI customizations) unless --update-scripts is set.
+# Updates agent configs, CLEAR scripts (including verify-ci.sh), and
+# previously-installed skills.
+#
+# verify-ci.sh is CLEAR-owned and always updated safely — your project-specific
+# checks live in scripts/verify-local.sh, which is never overwritten.
 #
 # Usage:
 #   ./scripts/update-project.sh [OPTIONS] [/path/to/your-project]
 #   ./scripts/update-project.sh             (updates current directory)
 #   ./scripts/update-project.sh --dry-run
-#   ./scripts/update-project.sh --update-scripts
 # =============================================================================
 
 set -euo pipefail
@@ -33,7 +34,6 @@ header()  { echo -e "\n${BOLD}$*${RESET}"; }
 
 # ── Defaults
 DRY_RUN=false
-UPDATE_SCRIPTS=false
 TARGET_DIR=""
 
 # ── Parse arguments
@@ -41,10 +41,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run)
       DRY_RUN=true
-      shift
-      ;;
-    --update-scripts)
-      UPDATE_SCRIPTS=true
       shift
       ;;
     --help|-h)
@@ -55,23 +51,20 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Options:"
       echo "  --dry-run          Show what would change without writing any files"
-      echo "  --update-scripts   Also overwrite scripts/verify-ci.sh (normally skipped"
-      echo "                     because you add your own checks to that file)"
       echo "  --help             Show this help"
       echo ""
       echo "What gets updated:"
       echo "  • Agent configs    .github/ (not .github/prompts/), .cursor/, .claude/,"
       echo "                     .vscode/, CLAUDE.md, .cursorrules"
-      echo "  • CLEAR scripts    scripts/setup-clear.sh, bootstrap-project.sh,"
-      echo "                     update-project.sh (self)"
+      echo "  • CLEAR scripts    scripts/verify-ci.sh, setup-clear.sh,"
+      echo "                     bootstrap-project.sh, update-project.sh (self)"
       echo "  • Installed skills .github/prompts/<name>.prompt.md for each skill"
       echo "                     that was previously installed from CLEAR"
       echo ""
       echo "What is never touched:"
-      echo "  • clear/autonomy.yml   — your project-specific configuration"
-      echo "  • .gitignore           — your project-specific ignores"
-      echo "  • scripts/verify-ci.sh — your custom CI checks (use --update-scripts"
-      echo "                           to overwrite, then re-add your customizations)"
+      echo "  • clear/autonomy.yml     — your project-specific configuration"
+      echo "  • scripts/verify-local.sh — your project-specific CI checks"
+      echo "  • .gitignore             — your project-specific ignores"
       exit 0
       ;;
     -*)
@@ -202,21 +195,29 @@ update_file \
   "$CLEAR_ROOT/templates/agent-configs/.cursorrules" \
   "$TARGET_DIR/.cursorrules"
 
-# ── 2. CLEAR-managed scripts (not user-customized)
+# ── 2. CLEAR-managed scripts (always updated)
 header "CLEAR scripts..."
+update_file "$CLEAR_ROOT/scripts/verify-ci.sh"         "$TARGET_DIR/scripts/verify-ci.sh"
 update_file "$CLEAR_ROOT/scripts/setup-clear.sh"       "$TARGET_DIR/scripts/setup-clear.sh"
 update_file "$CLEAR_ROOT/scripts/bootstrap-project.sh" "$TARGET_DIR/scripts/bootstrap-project.sh"
 update_file "$CLEAR_ROOT/scripts/update-project.sh"    "$TARGET_DIR/scripts/update-project.sh"
 
-# ── 3. verify-ci.sh — skip by default (user adds their project's checks here)
-if [[ "$UPDATE_SCRIPTS" == true ]]; then
-  header "Scripts (--update-scripts)..."
-  warn "Overwriting scripts/verify-ci.sh — re-add your project-specific checks after."
-  update_file "$CLEAR_ROOT/scripts/verify-ci.sh" "$TARGET_DIR/scripts/verify-ci.sh"
+# ── 3. verify-local.sh — create only if missing (project-owned)
+if [[ ! -f "$TARGET_DIR/scripts/verify-local.sh" ]]; then
+  local_src="$CLEAR_ROOT/templates/agent-configs/scripts/verify-local.sh"
+  if [[ -f "$local_src" ]]; then
+    if [[ "$DRY_RUN" == false ]]; then
+      cp "$local_src" "$TARGET_DIR/scripts/verify-local.sh"
+      chmod +x "$TARGET_DIR/scripts/verify-local.sh"
+      echo -e "  ${GREEN}Created ${RESET}: scripts/verify-local.sh (project-owned — add your checks here)"
+    else
+      echo -e "  ${CYAN}Would create${RESET}: scripts/verify-local.sh"
+    fi
+    UPDATED+=("scripts/verify-local.sh")
+  fi
 else
-  warn "Skipping scripts/verify-ci.sh (you may have added custom checks)."
-  info "Use --update-scripts to overwrite it."
-  SKIPPED+=("scripts/verify-ci.sh")
+  echo -e "  ${CYAN}Kept    ${RESET}: scripts/verify-local.sh (project-owned)"
+  CURRENT+=("scripts/verify-local.sh")
 fi
 
 # ── 4. Skills — update only previously-installed ones

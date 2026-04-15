@@ -90,9 +90,11 @@ Show me the proposed autonomy.yml content. Wait for my approval before writing a
 
 Review the plan, adjust any boundaries, then tell the AI to write `clear/autonomy.yml`.
 
-### 3 — Add your project's checks to verify-ci.sh
+### 3 — Add your project's checks
 
-**Let AI detect your stack and update the script automatically:**
+`verify-ci.sh` auto-detects your stack (Node, Python, Go, Rust) and is CLEAR-owned — updated when you pull new CLEAR versions. Your project-specific checks go in `scripts/verify-local.sh`, which is never overwritten.
+
+**Let AI propose your checks:**
 
 ```
 PLAN MODE — do not write any files yet.
@@ -103,27 +105,27 @@ Analyze this codebase and identify:
 3. Test frameworks and how to run them (jest, pytest, go test, etc.)
 4. Any existing architecture or integration tests
 
-For each tool found, show me the exact run_check() line to add to scripts/verify-ci.sh,
+For each tool found, show me the exact run_check() line to add to scripts/verify-local.sh,
 placed in the correct section (Build / Linting / Tests / Architecture Tests).
 
 If a tool is configured but has no runnable command yet, note it as a recommendation.
 Show me the full proposed additions. Wait for my approval before editing the script.
 ```
 
-Once you approve, tell the AI: `"Apply the plan — update scripts/verify-ci.sh now."`
+Once you approve, tell the AI: `"Apply the plan — update scripts/verify-local.sh now."`
 
 Or if you prefer to edit manually, here are examples:
 
 ```bash
 # Node.js
-run_check "TypeScript build" "npm run build 2>&1"
-run_check "ESLint"           "npx eslint . 2>&1"
-run_check "Jest"             "npm test 2>&1"
+run_check "TypeScript build" "cd '$PROJECT_ROOT' && npm run build 2>&1"
+run_check "ESLint"           "cd '$PROJECT_ROOT' && npx eslint . 2>&1"
+run_check "Jest"             "cd '$PROJECT_ROOT' && npm test 2>&1"
 
 # Python
-run_check "Ruff"   "ruff check . 2>&1"
-run_check "Mypy"   "mypy . 2>&1"
-run_check "pytest" "pytest --tb=short -q 2>&1"
+run_check "Ruff"   "cd '$PROJECT_ROOT' && ruff check . 2>&1"
+run_check "Mypy"   "cd '$PROJECT_ROOT' && mypy . 2>&1"
+run_check "pytest" "cd '$PROJECT_ROOT' && pytest --tb=short -q 2>&1"
 ```
 
 **Validate the script works before relying on it:**
@@ -146,7 +148,7 @@ I want to turn this code review rule into an enforced constraint:
 In PLAN mode:
 1. What type of check best enforces this — linter rule, architecture test, or build flag?
 2. Show me the exact code for the check.
-3. Show me the run_check() line to add to scripts/verify-ci.sh.
+3. Show me the run_check() line to add to scripts/verify-local.sh.
 4. Write one failing test that proves the rule is enforced.
 
 Wait for my approval before writing any files.
@@ -180,7 +182,8 @@ are empty placeholders waiting to be configured?
 
 ```
 scripts/
-  verify-ci.sh          — The enforcement script. Run this. Always.
+  verify-ci.sh          — The enforcement script. Run this. Always. (CLEAR-owned)
+  verify-local.sh       — Project-specific checks (yours to edit, never overwritten)
   setup-clear.sh        — Interactive setup wizard
   bootstrap-project.sh  — Copy CLEAR into an existing project
   update-project.sh     — Sync a bootstrapped project with the latest CLEAR seed

@@ -135,7 +135,7 @@ Now when AI generates a new endpoint:
 
 Your architecture rule is enforced before the code leaves the AI's context, not by humans remembering to check, not even by waiting for CI/CD.
 
-Here's the part people miss: **use AI to build these constraints AND the verification scripts**. Tell your agent "write me a test that verifies all API endpoints have rate limiting, and add it to verify-ci.sh" - it'll generate both. You review it, tweak it, run it. Now you've got a constraint that took 10 minutes instead of an afternoon, and it runs automatically before every commit.
+Here's the part people miss: **use AI to build these constraints AND the verification scripts**. Tell your agent "write me a test that verifies all API endpoints have rate limiting, and add it to the verify script" - it'll generate both. You review it, tweak it, run it. Now you've got a constraint that took 10 minutes instead of an afternoon, and it runs automatically before every commit.
 
 ### **[L] Limited** - Figure Out Where AI Can Work Alone vs Where You Need Humans
 
@@ -523,7 +523,7 @@ Together: structured agents that can't break your design rules even if they try.
 
 Don't boil the ocean. Pick one thing this week:
 
-**Option 1 [C]:** Take your most annoying code review comment. The one you write every sprint. Ask AI to turn it into an automated test or linter rule. Add it to a verify-ci.sh script. Tell your AI to run it before marking work complete. Review the test. Run it. Now it's impossible to violate.
+**Option 1 [C]:** Take your most annoying code review comment. The one you write every sprint. Ask AI to turn it into an automated test or linter rule. Add it to a verify script. Tell your AI to run it before marking work complete. Review the test. Run it. Now it's impossible to violate.
 
 **Option 2 [L]:** Pick one low-risk module. Mark it "AI full autonomy." Use PLAN mode to see what AI will generate. Tweak until it matches your patterns. Harden its tests. Let the AI maintain it. Measure what happens.
 
@@ -581,4 +581,4 @@ One last thing worth saying: this article was written using CLEAR principles. I 
 
 The acronym came from the same process. I gave an LLM my tenets, it gave me CLEAR. That's not a confession. That's the point.
 
-What's your most annoying code review comment? That's probably your first constraint. Ask AI to turn it into a test and add it to your verify-ci.sh script.
+What's your most annoying code review comment? That's probably your first constraint. Ask AI to turn it into a test and add it to your verify script.

@@ -139,7 +139,8 @@ Wait for approval before writing code.
 |------|---------|
 | `clear/autonomy.yml` | Autonomy boundaries + sources of truth |
 | `clear/principles.md` | Five CLEAR principles quick reference |
-| `scripts/verify-ci.sh` | CI enforcement — run before completing work |
+| `scripts/verify-ci.sh` | CI enforcement — run before completing work (CLEAR-owned) |
+| `scripts/verify-local.sh` | Project-specific checks — add your checks here |
 | `scripts/setup-clear.sh` | One-time setup wizard |
 | `templates/architecture-tests/` | Architecture test examples |
 | `templates/skills/` | Reusable regeneration skill files |

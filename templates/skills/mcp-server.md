@@ -291,12 +291,11 @@ mcp/node_modules/
 mcp/__pycache__/
 ```
 
-### Step 5: Add run_check to verify-ci.sh (optional)
+### Step 5: Add run_check to verify-local.sh (optional)
 
-If the user wants to verify the MCP server itself starts cleanly, add to `scripts/verify-ci.sh`:
+If the user wants to verify the MCP server itself starts cleanly, add to `scripts/verify-local.sh`:
 
 ```bash
-# In the Architecture Tests section:
 if [[ -f "$PROJECT_ROOT/mcp/clear-server.js" ]]; then
   run_check "CLEAR MCP server syntax" "node --check $PROJECT_ROOT/mcp/clear-server.js 2>&1"
 fi

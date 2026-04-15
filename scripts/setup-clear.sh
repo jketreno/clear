@@ -230,23 +230,26 @@ fi
 header "CLEAR Setup — Step 4: CI Verification [C]"
 
 echo "The Constrained principle requires a local verification script that"
-echo "mirrors your CI/CD pipeline. scripts/verify-ci.sh is already provided."
+echo "mirrors your CI/CD pipeline. scripts/verify-ci.sh is already provided"
+echo "and auto-detects your project's build tools, linters, and test runners."
+echo ""
+echo "verify-ci.sh is CLEAR-owned (updated when you pull new CLEAR versions)."
+echo "Your project-specific checks go in scripts/verify-local.sh."
 echo ""
 
-if ask_yn "Make scripts/verify-ci.sh executable now?" "y"; then
-  chmod +x "$PROJECT_ROOT/scripts/verify-ci.sh"
-  chmod +x "$PROJECT_ROOT/scripts/setup-clear.sh"
+if ask_yn "Make scripts executable now?" "y"; then
+  chmod +x "$PROJECT_ROOT/scripts/"*.sh 2>/dev/null || true
   success "Scripts are now executable"
 fi
 
 echo ""
-info "Custom checks you might want to add to scripts/verify-ci.sh:"
+info "Add custom checks to scripts/verify-local.sh (never overwritten by CLEAR):"
 echo "  • Your linter (ESLint, Ruff, etc.)"
 echo "  • Your test runner (Jest, pytest, go test)"
 echo "  • Architecture tests (see templates/architecture-tests/)"
 echo "  • Code generation checks (proto, OpenAPI, etc.)"
 echo ""
-info "Look for the '── ADD YOUR PROJECT-SPECIFIC ... ──' comments in verify-ci.sh"
+info "See verify-local.sh for examples using run_check"
 
 # ─── Step 5: AI tool configuration ────────────────────────────────────────────
 
@@ -342,7 +345,7 @@ echo ""
 echo "Ask your AI:"
 echo "  'Turn this code review rule into an architecture test:"
 echo "   [YOUR MOST COMMON REVIEW COMMENT]'"
-echo "  'Add it to scripts/verify-ci.sh'"
+echo "  'Add it to scripts/verify-local.sh'"
 echo ""
 echo "See docs/getting-started.md for the full step-by-step guide."
 echo "See templates/architecture-tests/ for examples."
@@ -353,7 +356,8 @@ header "Setup Complete"
 
 echo "Created/configured:"
 echo "  ✅ clear/autonomy.yml          — autonomy boundaries"
-echo "  ✅ scripts/verify-ci.sh        — CI enforcement script"
+echo "  ✅ scripts/verify-ci.sh        — CI enforcement script (CLEAR-owned)"
+echo "  ✅ scripts/verify-local.sh     — project-specific checks (yours to edit)"
 if [[ -n "$INSTALLED_SKILLS" ]]; then
   for _s in $INSTALLED_SKILLS; do
     echo "  ✅ .github/prompts/${_s}.prompt.md"
@@ -362,7 +366,7 @@ fi
 echo ""
 echo "Next steps:"
 echo "  1. Review clear/autonomy.yml and adjust boundaries for your codebase"
-echo "  2. Open scripts/verify-ci.sh and add your project-specific checks"
+echo "  2. Open scripts/verify-local.sh and add your project-specific checks"
 echo "  3. Run ./scripts/verify-ci.sh to see which checks pass/fail today"
 echo "  4. Read docs/getting-started.md for the full workflow"
 echo ""

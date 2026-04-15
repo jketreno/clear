@@ -45,7 +45,7 @@ Before modifying any file, check `clear/autonomy.yml`:
 
 ## Enforced Rules [C]
 
-Your rules are in `scripts/verify-ci.sh`. The AI treats verify-ci.sh failures as blockers, not warnings. Common checks it runs:
+Your rules are enforced by `scripts/verify-ci.sh` (CLEAR-owned) and `scripts/verify-local.sh` (project-specific checks). The AI treats verify-ci.sh failures as blockers, not warnings. Common checks it runs:
 
 - Build (TypeScript compilation, no warnings)
 - Lint (ESLint, Prettier, Ruff, etc.)  
@@ -114,7 +114,8 @@ For complex changes (new feature, refactor, new domain concept), use PLAN mode f
 ## Repository Layout
 
 ```
-scripts/verify-ci.sh          — Run this. Always.
+scripts/verify-ci.sh          — Run this. Always. (CLEAR-owned, auto-updated)
+scripts/verify-local.sh       — Project-specific checks (yours to edit)
 scripts/setup-clear.sh        — One-time project setup
 clear/autonomy.yml            — Autonomy boundaries + sources of truth
 clear/principles.md           — This framework's quick reference

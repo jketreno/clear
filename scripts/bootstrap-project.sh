@@ -108,6 +108,12 @@ declare -a COPY_ITEMS=(
   "templates/agent-configs/.gitignore     .gitignore     file"
 )
 
+# verify-local.sh is project-owned: copy only if it doesn't exist yet.
+# verify-ci.sh is CLEAR-owned: always copied via the scripts/ dir above.
+declare -a COPY_IF_MISSING=(
+  "templates/agent-configs/scripts/verify-local.sh  scripts/verify-local.sh"
+)
+
 if [[ "$INCLUDE_TEMPLATES" == true ]]; then
   COPY_ITEMS+=("templates      templates      dir")
 fi
@@ -175,6 +181,25 @@ header "Copying files..."
 for item in "${COPY_ITEMS[@]}"; do
   read -r src_rel dst_rel kind <<< "$item"
   copy_item "$src_rel" "$dst_rel" "$kind"
+done
+
+# ── Copy project-owned files only if they don't exist yet
+for item in "${COPY_IF_MISSING[@]}"; do
+  read -r src_rel dst_rel <<< "$item"
+  local_src="$CLEAR_ROOT/$src_rel"
+  local_dst="$TARGET_DIR/$dst_rel"
+  if [[ -e "$local_dst" ]]; then
+    echo -e "  ${YELLOW}Exists${RESET}: $dst_rel — keeping your version"
+    SKIPPED+=("$dst_rel")
+  elif [[ "$DRY_RUN" == false ]]; then
+    mkdir -p "$(dirname "$local_dst")"
+    cp "$local_src" "$local_dst"
+    echo -e "  ${GREEN}Copied${RESET} : $dst_rel (project-owned — CLEAR will not overwrite)"
+    COPIED+=("$dst_rel")
+  else
+    echo -e "  ${CYAN}Would copy${RESET}: $dst_rel (project-owned — CLEAR will not overwrite)"
+    COPIED+=("$dst_rel")
+  fi
 done
 
 # ── Make scripts executable

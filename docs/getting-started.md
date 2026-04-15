@@ -77,32 +77,35 @@ The setup wizard will:
 
 ---
 
-## Step 3: Customize verify-ci.sh
+## Step 3: Add your project's checks
 
-Open `scripts/verify-ci.sh` and add your project's checks. Find the `── ADD YOUR PROJECT-SPECIFIC ... ──` comments:
+`verify-ci.sh` auto-detects your stack (Node, Python, Go, Rust) and is CLEAR-owned — updated when you pull new CLEAR versions. Your project-specific checks go in `scripts/verify-local.sh`, which is never overwritten.
+
+Open `scripts/verify-local.sh` and add your project's checks:
 
 **For Node.js/TypeScript:**
 ```bash
-# Build checks section:
-run_check "TypeScript build" "npm run build 2>&1"
+run_check "TypeScript build" "cd '$PROJECT_ROOT' && npm run build 2>&1"
+run_check "ESLint" "cd '$PROJECT_ROOT' && npx eslint . 2>&1"
+run_check "Jest" "cd '$PROJECT_ROOT' && npm test 2>&1"
 
-# Lint section:
-run_check "ESLint" "npx eslint . 2>&1"
-
-# Test section:
-run_check "Jest" "npm test 2>&1"
-
-# Architecture tests section:
-run_check "Architecture" "npm run test:architecture 2>&1"
+if ! $FAST_MODE; then
+  run_check "Architecture" "cd '$PROJECT_ROOT' && npm run test:architecture 2>&1"
+fi
 ```
 
 **For Python:**
 ```bash
-run_check "Ruff lint" "ruff check . 2>&1"
-run_check "Mypy types" "mypy . 2>&1"
-run_check "pytest" "pytest --tb=short -q 2>&1"
-run_check "Architecture tests" "pytest tests/architecture/ 2>&1"
+run_check "Ruff lint" "cd '$PROJECT_ROOT' && ruff check . 2>&1"
+run_check "Mypy types" "cd '$PROJECT_ROOT' && mypy . 2>&1"
+run_check "pytest" "cd '$PROJECT_ROOT' && pytest --tb=short -q 2>&1"
+
+if ! $FAST_MODE; then
+  run_check "Architecture tests" "cd '$PROJECT_ROOT' && pytest tests/architecture/ 2>&1"
+fi
 ```
+
+All helpers (`run_check`, `pass`, `fail`, `info`, `warn`, `section`) and variables (`PROJECT_ROOT`, `FAST_MODE`, `FIX_MODE`) are available from `verify-ci.sh`.
 
 **Run it now** to see what passes and what doesn't in your current project:
 
@@ -211,9 +214,9 @@ cp templates/architecture-tests/autonomy-guard.test.js tests/architecture/
 
 Edit the copied files to match your project structure (the `// UPDATE:` comments show you where).
 
-Add to `scripts/verify-ci.sh`:
+Add to `scripts/verify-local.sh`:
 ```bash
-run_check "Architecture tests" "npx jest tests/architecture/ 2>&1"
+run_check "Architecture tests" "cd '$PROJECT_ROOT' && npx jest tests/architecture/ 2>&1"
 ```
 
 ---

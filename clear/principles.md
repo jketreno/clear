@@ -99,7 +99,8 @@ See [docs/agentic.md](../docs/agentic.md) for full patterns and the `templates/s
 |------|---------|
 | `clear/autonomy.yml` | Module autonomy boundaries + sources of truth |
 | `clear/principles.md` | This file — AI quick reference |
-| `scripts/verify-ci.sh` | Local CI/CD enforcement (run before every commit) |
+| `scripts/verify-ci.sh` | Local CI/CD enforcement — CLEAR-owned, auto-updated |
+| `scripts/verify-local.sh` | Project-specific checks — yours to edit |
 | `scripts/setup-clear.sh` | Interactive setup wizard for new projects |
 | `templates/architecture-tests/` | Example architecture tests to adapt |
 | `templates/skills/` | Reusable AI skill files for common patterns |

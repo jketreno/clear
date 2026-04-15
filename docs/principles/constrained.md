@@ -142,15 +142,14 @@ See `templates/architecture-tests/` for complete, copy-paste examples.
 
 **Step 3:** Write the enforcement
 
-**Step 4:** Add it to `verify-ci.sh`:
+**Step 4:** Add it to `verify-local.sh`:
 ```bash
-# In the check_architecture function:
-run_check "Request ID enforcement" "npx jest tests/architecture/request-id.test.js 2>&1"
+run_check "Request ID enforcement" "cd '$PROJECT_ROOT' && npx jest tests/architecture/request-id.test.js 2>&1"
 ```
 
 **Step 5:** Tell your AI:
 ```
-This rule is now in verify-ci.sh. It will fail if you violate it.
+This rule is now in verify-local.sh. It will fail if you violate it.
 You must run ./scripts/verify-ci.sh and pass it before marking work complete.
 ```
 
@@ -168,7 +167,7 @@ The powerful move: **use AI to write the constraints**. Then you review and appr
  2. Input validation with a schema
  3. Authentication required
  
- Then add it to scripts/verify-ci.sh.
+ Then add it to scripts/verify-local.sh.
  Use templates/architecture-tests/api-rules.test.js as a starting point."
 ```
 

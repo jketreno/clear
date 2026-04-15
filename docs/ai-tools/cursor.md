@@ -162,9 +162,9 @@ For complex multi-file changes, use Cursor Composer (Ctrl/Cmd + I):
 
 **Cursor modifies humans-only files anyway:**
 - AI instructions are advisory, not enforced at the file system level
-- Add the autonomy guard architecture test to verify-ci.sh as a mechanical safety net:
+- Add the autonomy guard architecture test to verify-local.sh as a mechanical safety net:
   ```bash
-  run_check "Autonomy guard" "npx jest tests/architecture/autonomy-guard.test.js 2>&1"
+  run_check "Autonomy guard" "cd '$PROJECT_ROOT' && npx jest tests/architecture/autonomy-guard.test.js 2>&1"
   ```
 - Consider a pre-commit hook as a final line of defense
 

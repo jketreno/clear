@@ -13,6 +13,11 @@
 #   ./scripts/verify-ci.sh --fast    # Skip slow checks (architecture tests)
 #   ./scripts/verify-ci.sh --fix     # Auto-fix linting issues where possible
 #
+# Customization:
+#   Add project-specific checks to scripts/verify-local.sh (not this file).
+#   This file is CLEAR-owned and updated by update-project.sh.
+#   verify-local.sh is YOUR file — it is never overwritten.
+#
 # AI Instructions: Run this script after generating or modifying any code.
 # If it fails, fix the issues and run again. Only report work as complete
 # when ALL checks pass. Never skip or bypass this script.
@@ -105,10 +110,6 @@ check_build() {
   if $HAS_RUST; then
     run_check "Cargo build" "cd '$PROJECT_ROOT' && cargo build 2>&1" || true
   fi
-
-  # ── ADD YOUR PROJECT-SPECIFIC BUILD COMMANDS BELOW ──
-  # Example: run_check "Generate protos" "cd '$PROJECT_ROOT' && make proto 2>&1"
-  # Example: run_check "Generate types" "cd '$PROJECT_ROOT' && npm run gen:types 2>&1"
 }
 
 check_lint() {
@@ -155,8 +156,6 @@ check_lint() {
       run_check "Golint" "cd '$PROJECT_ROOT' && golint ./... 2>&1" || true
     fi
   fi
-
-  # ── ADD YOUR PROJECT-SPECIFIC LINT COMMANDS BELOW ──
 }
 
 check_tests() {
@@ -183,8 +182,6 @@ check_tests() {
   if $HAS_RUST; then
     run_check "Cargo test" "cd '$PROJECT_ROOT' && cargo test 2>&1" || true
   fi
-
-  # ── ADD YOUR PROJECT-SPECIFIC TEST COMMANDS BELOW ──
 }
 
 check_architecture() {
@@ -208,10 +205,6 @@ check_architecture() {
       run_check "Architecture tests (pytest)" "cd '$PROJECT_ROOT' && pytest tests/architecture/ --tb=short -q 2>&1" || true
     fi
   fi
-
-  # ── ADD YOUR ARCHITECTURE TEST COMMANDS BELOW ──
-  # These are the tests that enforce structural rules — see templates/architecture-tests/
-  # Example: run_check "API rate limiting" "cd '$PROJECT_ROOT' && npx jest tests/architecture/api-rules.test.js 2>&1"
 }
 
 check_autonomy() {
@@ -240,7 +233,7 @@ check_autonomy() {
             line = $0
             sub(/^.*path:[[:space:]]*/, "", line)
             gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
-            gsub(/^["'\'']|["'\'']$/, "", line)
+            gsub(/^["'\''"]|["'\''"]$/, "", line)
             current_path = line
             next
           }
@@ -252,6 +245,19 @@ check_autonomy() {
     fi
   else
     warn "clear/autonomy.yml not found — run scripts/setup-clear.sh to configure autonomy boundaries"
+  fi
+}
+
+# ─── Local Project Checks ────────────────────────────────────────────────────
+# Source verify-local.sh if it exists. That file is project-owned (never
+# overwritten by CLEAR updates) and can call run_check, pass, fail, info,
+# warn, section, and read FAST_MODE / FIX_MODE / PROJECT_ROOT.
+
+source_local_checks() {
+  if [[ -f "$SCRIPT_DIR/verify-local.sh" ]]; then
+    section "Project-Specific Checks (verify-local.sh)"
+    # shellcheck source=/dev/null
+    source "$SCRIPT_DIR/verify-local.sh"
   fi
 }
 
@@ -278,6 +284,7 @@ main() {
   check_tests
   check_architecture
   check_autonomy
+  source_local_checks
 
   echo ""
   echo -e "${BLUE}════════════════════════════════════════════${NC}"
