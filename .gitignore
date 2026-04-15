@@ -45,6 +45,9 @@ Thumbs.db
 # CLEAR local overrides (users may create these without committing them)
 clear/local-overrides.yml
 
+# Personal planning docs
+GAMEPLAN.md
+
 # Logs
 *.log
 npm-debug.log*
