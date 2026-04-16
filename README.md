@@ -67,6 +67,10 @@ cd clear
 
 # Apply (copies files + runs setup wizard):
 ./scripts/bootstrap-project.sh /path/to/your-project
+
+# Enable extensions during bootstrap:
+./scripts/bootstrap-project.sh --enable-extension file-size /path/to/your-project
+./scripts/bootstrap-project.sh --enable-extension lizard --enable-extension file-size /path/to/your-project
 ```
 
 The bootstrap script copies all CLEAR files into your project, preserves existing files, makes scripts executable, and launches the setup wizard to configure `clear/autonomy.yml`.
@@ -203,7 +207,7 @@ templates/
     .cursorrules        — Legacy Cursor fallback
   architecture-tests/   — Copy-paste test templates (API rules, type sync, autonomy guard)
   skills/               — AI skill files for type sync, API endpoints, reality tests
-  linting/              — ESLint config templates (flat + legacy)
+  linting/              — ESLint config templates (flat, legacy, React/TSX)
   github-actions/       — CI/CD workflow template
 
 .github/                — Copilot configs for developing the CLEAR seed repo itself

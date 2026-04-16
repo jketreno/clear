@@ -12,6 +12,8 @@
 #   ./scripts/update-project.sh [OPTIONS] [/path/to/your-project]
 #   ./scripts/update-project.sh             (updates current directory)
 #   ./scripts/update-project.sh --dry-run
+#   ./scripts/update-project.sh --enable-extension lizard
+#   ./scripts/update-project.sh --setup-extensions
 # =============================================================================
 
 set -euo pipefail
@@ -32,15 +34,66 @@ warn()    { echo -e "${YELLOW}⚠  ${RESET}$*"; }
 error()   { echo -e "${RED}❌ ${RESET}$*" >&2; }
 header()  { echo -e "\n${BOLD}$*${RESET}"; }
 
+# ── Enable an extension in a target project's extensions.yml
+# Usage: enable_extension <target_dir> <extension_name>
+enable_extension() {
+  local target="$1"
+  local ext_name="$2"
+  local ext_file="$target/clear/extensions.yml"
+
+  if [[ ! -f "$ext_file" ]]; then
+    warn "Cannot enable '$ext_name': clear/extensions.yml not found in $target"
+    return 1
+  fi
+
+  # Check if the extension exists in the file
+  if ! grep -q "name:[[:space:]]*${ext_name}" "$ext_file"; then
+    error "Unknown extension: '$ext_name'"
+    echo "  Available extensions:"
+    grep 'name:' "$ext_file" | sed 's/.*name:[[:space:]]*/    /' | sed 's/"//g'
+    return 1
+  fi
+
+  # Check if already enabled
+  local already_enabled
+  already_enabled=$(awk -v name="$ext_name" '
+    /name:/ && index($0, name) { found=1; next }
+    found && /enabled:/ { print $2; exit }
+  ' "$ext_file")
+
+  if [[ "$already_enabled" == "true" ]]; then
+    info "Extension '$ext_name' is already enabled"
+    return 0
+  fi
+
+  # Enable it
+  sed -i "/name:[[:space:]]*${ext_name}/,/enabled:/{s/enabled:[[:space:]]*false/enabled: true/}" "$ext_file"
+  success "Enabled extension: $ext_name"
+}
+
 # ── Defaults
 DRY_RUN=false
 TARGET_DIR=""
+ENABLE_EXTENSIONS=()
+SETUP_EXTENSIONS=false
 
 # ── Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run)
       DRY_RUN=true
+      shift
+      ;;
+    --enable-extension)
+      if [[ -z "${2:-}" ]]; then
+        error "--enable-extension requires an extension name (e.g., lizard, file-size)"
+        exit 1
+      fi
+      ENABLE_EXTENSIONS+=("$2")
+      shift 2
+      ;;
+    --setup-extensions)
+      SETUP_EXTENSIONS=true
       shift
       ;;
     --help|-h)
@@ -50,8 +103,11 @@ while [[ $# -gt 0 ]]; do
       echo "Run this from the CLEAR repo when you pull a new version of CLEAR."
       echo ""
       echo "Options:"
-      echo "  --dry-run          Show what would change without writing any files"
-      echo "  --help             Show this help"
+      echo "  --dry-run                    Show what would change without writing any files"
+      echo "  --enable-extension <name>    Enable an extension (e.g., lizard, file-size)"
+      echo "                               Can be specified multiple times"
+      echo "  --setup-extensions           Run the interactive extension setup wizard"
+      echo "  --help                       Show this help"
       echo ""
       echo "What gets updated:"
       echo "  • Agent configs    .github/ (not .github/prompts/), .cursor/, .claude/,"
@@ -261,6 +317,101 @@ if [[ -d "$TARGET_DIR/.github/prompts" ]]; then
 else
   info "No .github/prompts/ directory — no skills to update."
   info "Install skills with: $CLEAR_ROOT/scripts/setup-clear.sh $TARGET_DIR"
+fi
+
+# ── 6. Enable requested extensions (--enable-extension)
+if [[ ${#ENABLE_EXTENSIONS[@]} -gt 0 && "$DRY_RUN" == false ]]; then
+  header "Enabling extensions..."
+  for ext_name in "${ENABLE_EXTENSIONS[@]}"; do
+    enable_extension "$TARGET_DIR" "$ext_name"
+  done
+elif [[ ${#ENABLE_EXTENSIONS[@]} -gt 0 && "$DRY_RUN" == true ]]; then
+  header "Extensions (dry-run)"
+  for ext_name in "${ENABLE_EXTENSIONS[@]}"; do
+    echo -e "  ${CYAN}Would enable${RESET}: $ext_name"
+  done
+fi
+
+# ── 7. Interactive extension setup (--setup-extensions)
+if [[ "$SETUP_EXTENSIONS" == true && "$DRY_RUN" == false ]]; then
+  header "Extension Setup"
+
+  EXT_FILE="$TARGET_DIR/clear/extensions.yml"
+  if [[ ! -f "$EXT_FILE" ]]; then
+    warn "No clear/extensions.yml found — skipping extension setup"
+  else
+    echo "Available extensions in $TARGET_DIR:"
+    echo ""
+
+    # Parse extensions from the target project's extensions.yml
+    SE_NAMES=()
+    SE_DESCS=()
+    SE_HINTS=()
+    SE_STATES=()
+    se_name="" se_desc="" se_hint="" se_state=""
+
+    while IFS= read -r line; do
+      if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*name:[[:space:]]*(.*) ]]; then
+        if [[ -n "$se_name" ]]; then
+          SE_NAMES+=("$se_name"); SE_DESCS+=("$se_desc")
+          SE_HINTS+=("$se_hint"); SE_STATES+=("$se_state")
+        fi
+        se_name="${BASH_REMATCH[1]}"
+        se_name="${se_name#\"}" ; se_name="${se_name%\"}"
+        se_desc="" ; se_hint="" ; se_state=""
+      elif [[ "$line" =~ ^[[:space:]]*description:[[:space:]]*(.*) ]]; then
+        se_desc="${BASH_REMATCH[1]}"
+        se_desc="${se_desc#\"}" ; se_desc="${se_desc%\"}"
+      elif [[ "$line" =~ ^[[:space:]]*install_hint:[[:space:]]*(.*) ]]; then
+        se_hint="${BASH_REMATCH[1]}"
+        se_hint="${se_hint#\"}" ; se_hint="${se_hint%\"}"
+      elif [[ "$line" =~ ^[[:space:]]*enabled:[[:space:]]*(.*) ]]; then
+        se_state="${BASH_REMATCH[1]}"
+      fi
+    done < "$EXT_FILE"
+    if [[ -n "$se_name" ]]; then
+      SE_NAMES+=("$se_name"); SE_DESCS+=("$se_desc")
+      SE_HINTS+=("$se_hint"); SE_STATES+=("$se_state")
+    fi
+
+    for _i in "${!SE_NAMES[@]}"; do
+      local_status="disabled"
+      [[ "${SE_STATES[$_i]}" == "true" ]] && local_status="ENABLED"
+      printf "  %d. %-12s — %s [%s]\n" "$((_i+1))" "${SE_NAMES[$_i]}" "${SE_DESCS[$_i]}" "$local_status"
+      printf "     Install: %s\n" "${SE_HINTS[$_i]}"
+      echo ""
+    done
+
+    printf "${CYAN}  Enter numbers to enable (space-separated), 'all', or press ENTER to skip: ${RESET}" > /dev/tty
+    read -r SE_SELECTION < /dev/tty
+    echo ""
+
+    if [[ -n "$SE_SELECTION" ]]; then
+      SE_TO_ENABLE=()
+      if [[ "$SE_SELECTION" == "all" ]]; then
+        for _i in "${!SE_NAMES[@]}"; do
+          SE_TO_ENABLE+=("${SE_NAMES[$_i]}")
+        done
+      else
+        for _token in $SE_SELECTION; do
+          if [[ "$_token" =~ ^[0-9]+$ ]]; then
+            _idx=$((_token - 1))
+            if [[ $_idx -ge 0 && $_idx -lt ${#SE_NAMES[@]} ]]; then
+              SE_TO_ENABLE+=("${SE_NAMES[$_idx]}")
+            else
+              warn "No extension at position $_token — skipped"
+            fi
+          fi
+        done
+      fi
+
+      for _ext in "${SE_TO_ENABLE[@]}"; do
+        enable_extension "$TARGET_DIR" "$_ext"
+      done
+    else
+      info "No changes — extensions unchanged"
+    fi
+  fi
 fi
 
 # ── Make scripts executable

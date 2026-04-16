@@ -6,6 +6,8 @@
 #   ./scripts/bootstrap-project.sh --dry-run /path/to/your-project
 #   ./scripts/bootstrap-project.sh --no-templates /path/to/your-project
 #   ./scripts/bootstrap-project.sh --no-setup /path/to/your-project
+#   ./scripts/bootstrap-project.sh --enable-extension lizard /path/to/your-project
+#   ./scripts/bootstrap-project.sh --enable-extension file-size /path/to/your-project
 
 set -euo pipefail
 
@@ -26,11 +28,49 @@ warn()    { echo -e "${YELLOW}⚠  ${RESET}$*"; }
 error()   { echo -e "${RED}❌ ${RESET}$*" >&2; }
 header()  { echo -e "\n${BOLD}$*${RESET}"; }
 
+# ── Enable an extension in a target project's extensions.yml
+# Usage: enable_extension <target_dir> <extension_name>
+enable_extension() {
+  local target="$1"
+  local ext_name="$2"
+  local ext_file="$target/clear/extensions.yml"
+
+  if [[ ! -f "$ext_file" ]]; then
+    warn "Cannot enable '$ext_name': clear/extensions.yml not found in $target"
+    return 1
+  fi
+
+  # Check if the extension exists in the file
+  if ! grep -q "name:[[:space:]]*${ext_name}" "$ext_file"; then
+    error "Unknown extension: '$ext_name'"
+    echo "  Available extensions:"
+    grep 'name:' "$ext_file" | sed 's/.*name:[[:space:]]*/    /' | sed 's/"//g'
+    return 1
+  fi
+
+  # Check if already enabled
+  local already_enabled
+  already_enabled=$(awk -v name="$ext_name" '
+    /name:/ && index($0, name) { found=1; next }
+    found && /enabled:/ { print $2; exit }
+  ' "$ext_file")
+
+  if [[ "$already_enabled" == "true" ]]; then
+    info "Extension '$ext_name' is already enabled"
+    return 0
+  fi
+
+  # Enable it
+  sed -i "/name:[[:space:]]*${ext_name}/,/enabled:/{s/enabled:[[:space:]]*false/enabled: true/}" "$ext_file"
+  success "Enabled extension: $ext_name"
+}
+
 # ── Defaults
 DRY_RUN=false
 INCLUDE_TEMPLATES=true
 RUN_SETUP=true
 TARGET_DIR=""
+ENABLE_EXTENSIONS=()
 
 # ── Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -47,14 +87,24 @@ while [[ $# -gt 0 ]]; do
       RUN_SETUP=false
       shift
       ;;
+    --enable-extension)
+      if [[ -z "${2:-}" ]]; then
+        error "--enable-extension requires an extension name (e.g., lizard, file-size)"
+        exit 1
+      fi
+      ENABLE_EXTENSIONS+=("$2")
+      shift 2
+      ;;
     --help|-h)
       echo "Usage: $(basename "$0") [OPTIONS] /path/to/your-project"
       echo ""
       echo "Options:"
-      echo "  --dry-run        Show what would be copied without doing it"
-      echo "  --no-templates   Skip copying the templates/ directory (architecture tests, skills, linting)"
-      echo "  --no-setup       Skip running setup-clear.sh after copying"
-      echo "  --help           Show this help"
+      echo "  --dry-run                    Show what would be copied without doing it"
+      echo "  --no-templates               Skip copying the templates/ directory"
+      echo "  --no-setup                   Skip running setup-clear.sh after copying"
+      echo "  --enable-extension <name>    Enable an extension (e.g., lizard, file-size)"
+      echo "                               Can be specified multiple times"
+      echo "  --help                       Show this help"
       exit 0
       ;;
     -*)
@@ -223,6 +273,19 @@ if [[ "${#CONFLICTS[@]}" -gt 0 ]]; then
   warn "Merged directories — review for conflicts:"
   for c in "${CONFLICTS[@]}"; do
     echo "    $c"
+  done
+fi
+
+# ── Enable requested extensions
+if [[ ${#ENABLE_EXTENSIONS[@]} -gt 0 && "$DRY_RUN" == false ]]; then
+  header "Enabling extensions..."
+  for ext_name in "${ENABLE_EXTENSIONS[@]}"; do
+    enable_extension "$TARGET_DIR" "$ext_name"
+  done
+elif [[ ${#ENABLE_EXTENSIONS[@]} -gt 0 && "$DRY_RUN" == true ]]; then
+  header "Extensions (dry-run)"
+  for ext_name in "${ENABLE_EXTENSIONS[@]}"; do
+    echo -e "  ${CYAN}Would enable${RESET}: $ext_name"
   done
 fi
 
