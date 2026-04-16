@@ -62,9 +62,10 @@ while [[ $# -gt 0 ]]; do
       echo "                     that was previously installed from CLEAR"
       echo ""
       echo "What is never touched:"
-      echo "  • clear/autonomy.yml     — your project-specific configuration"
+      echo "  • clear/autonomy.yml      — your project-specific configuration"
+      echo "  • clear/extensions.yml    — your project-specific extension settings"
       echo "  • scripts/verify-local.sh — your project-specific CI checks"
-      echo "  • .gitignore             — your project-specific ignores"
+      echo "  • .gitignore              — your project-specific ignores"
       exit 0
       ;;
     -*)
@@ -220,7 +221,25 @@ else
   CURRENT+=("scripts/verify-local.sh")
 fi
 
-# ── 4. Skills — update only previously-installed ones
+# ── 4. extensions.yml — create only if missing (project-owned)
+if [[ ! -f "$TARGET_DIR/clear/extensions.yml" ]]; then
+  local_src="$CLEAR_ROOT/clear/extensions.yml"
+  if [[ -f "$local_src" ]]; then
+    if [[ "$DRY_RUN" == false ]]; then
+      mkdir -p "$TARGET_DIR/clear"
+      cp "$local_src" "$TARGET_DIR/clear/extensions.yml"
+      echo -e "  ${GREEN}Created ${RESET}: clear/extensions.yml (project-owned — configure your extensions here)"
+    else
+      echo -e "  ${CYAN}Would create${RESET}: clear/extensions.yml"
+    fi
+    UPDATED+=("clear/extensions.yml")
+  fi
+else
+  echo -e "  ${CYAN}Kept    ${RESET}: clear/extensions.yml (project-owned)"
+  CURRENT+=("clear/extensions.yml")
+fi
+
+# ── 5. Skills — update only previously-installed ones
 #    A skill is "installed" if .github/prompts/<name>.prompt.md exists
 #    AND templates/skills/<name>.md exists in CLEAR.
 header "Skills..."

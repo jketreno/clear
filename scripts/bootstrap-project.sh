@@ -108,10 +108,11 @@ declare -a COPY_ITEMS=(
   "templates/agent-configs/.gitignore     .gitignore     file"
 )
 
-# verify-local.sh is project-owned: copy only if it doesn't exist yet.
+# Project-owned files: copy only if they don't exist yet (never overwritten).
 # verify-ci.sh is CLEAR-owned: always copied via the scripts/ dir above.
 declare -a COPY_IF_MISSING=(
   "templates/agent-configs/scripts/verify-local.sh  scripts/verify-local.sh"
+  "clear/extensions.yml                             clear/extensions.yml"
 )
 
 if [[ "$INCLUDE_TEMPLATES" == true ]]; then

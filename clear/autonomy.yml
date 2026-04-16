@@ -45,6 +45,10 @@ modules:
     level: supervised
     reason: "Bootstrap and verify scripts affect every adopter; review before release"
 
+  - path: "clear/extensions.yml"
+    level: supervised
+    reason: "Project-owned extension config — AI may draft, human reviews before commit"
+
   - path: "clear"
     level: supervised
     reason: "Autonomy and principle text is policy; review changes"
@@ -104,6 +108,11 @@ sources_of_truth:
     source_of_truth: "scripts/verify-ci.sh + scripts/verify-local.sh"
     defined_in: "scripts/verify-ci.sh (CLEAR-owned), scripts/verify-local.sh (project-owned)"
     note: "verify-ci.sh is the scaffolding; verify-local.sh holds project-specific checks"
+
+  - concept: "Extension configuration"
+    source_of_truth: "clear/extensions.yml"
+    defined_in: "clear/extensions.yml (project-owned)"
+    note: "Optional tool extensions; verify-ci.sh reads this to run enabled extensions"
 
   - concept: "AI session workflow"
     source_of_truth: "CLAUDE.md and .cursor/rules/"

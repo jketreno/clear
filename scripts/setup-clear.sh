@@ -335,9 +335,114 @@ else
   info "No skills found in $SKILLS_DIR"
 fi
 
-# ─── Step 7: First experiment ─────────────────────────────────────────────────
+# ─── Step 7: Extensions ──────────────────────────────────────────────────────
 
-header "CLEAR Setup — Step 7: Your First Experiment"
+header "CLEAR Setup — Step 7: Extensions [optional]"
+
+echo "CLEAR extensions add optional tool checks to verify-ci.sh."
+echo "Extensions are disabled by default. When enabled, verify-ci.sh will"
+echo "check that the tool is installed and run it as part of verification."
+echo ""
+echo "Available extensions:"
+echo ""
+
+EXTENSIONS_FILE="$PROJECT_ROOT/clear/extensions.yml"
+if [[ -f "$EXTENSIONS_FILE" ]]; then
+  # Parse extension names and descriptions from extensions.yml
+  EXT_NAMES=()
+  EXT_DESCS=()
+  EXT_HINTS=()
+  EXT_URLS=()
+  local_name="" local_desc="" local_hint="" local_url=""
+
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*name:[[:space:]]*(.*) ]]; then
+      if [[ -n "$local_name" ]]; then
+        EXT_NAMES+=("$local_name")
+        EXT_DESCS+=("$local_desc")
+        EXT_HINTS+=("$local_hint")
+        EXT_URLS+=("$local_url")
+      fi
+      local_name="${BASH_REMATCH[1]}"
+      local_name="${local_name#\"}" ; local_name="${local_name%\"}"
+      local_desc="" ; local_hint="" ; local_url=""
+    elif [[ "$line" =~ ^[[:space:]]*description:[[:space:]]*(.*) ]]; then
+      local_desc="${BASH_REMATCH[1]}"
+      local_desc="${local_desc#\"}" ; local_desc="${local_desc%\"}"
+    elif [[ "$line" =~ ^[[:space:]]*install_hint:[[:space:]]*(.*) ]]; then
+      local_hint="${BASH_REMATCH[1]}"
+      local_hint="${local_hint#\"}" ; local_hint="${local_hint%\"}"
+    elif [[ "$line" =~ ^[[:space:]]*project_url:[[:space:]]*(.*) ]]; then
+      local_url="${BASH_REMATCH[1]}"
+      local_url="${local_url#\"}" ; local_url="${local_url%\"}"
+    fi
+  done < "$EXTENSIONS_FILE"
+  # Capture the last one
+  if [[ -n "$local_name" ]]; then
+    EXT_NAMES+=("$local_name")
+    EXT_DESCS+=("$local_desc")
+    EXT_HINTS+=("$local_hint")
+    EXT_URLS+=("$local_url")
+  fi
+
+  for _i in "${!EXT_NAMES[@]}"; do
+    printf "  %d. %s — %s\n" "$((_i+1))" "${EXT_NAMES[$_i]}" "${EXT_DESCS[$_i]}"
+    printf "     Install: %s\n" "${EXT_HINTS[$_i]}"
+    [[ -n "${EXT_URLS[$_i]}" ]] && printf "     Project: %s\n" "${EXT_URLS[$_i]}"
+    echo ""
+  done
+
+  printf "${CYAN}  Enter numbers to enable (space-separated), 'all', or press ENTER to skip: ${NC}" > /dev/tty
+  read -r EXT_SELECTION < /dev/tty
+  echo ""
+
+  if [[ -n "$EXT_SELECTION" ]]; then
+    ENABLE_EXTS=()
+    if [[ "$EXT_SELECTION" == "all" ]]; then
+      for _i in "${!EXT_NAMES[@]}"; do
+        ENABLE_EXTS+=("${EXT_NAMES[$_i]}")
+      done
+    else
+      for _token in $EXT_SELECTION; do
+        if [[ "$_token" =~ ^[0-9]+$ ]]; then
+          _idx=$((_token - 1))
+          if [[ $_idx -ge 0 && $_idx -lt ${#EXT_NAMES[@]} ]]; then
+            ENABLE_EXTS+=("${EXT_NAMES[$_idx]}")
+          else
+            warn "No extension at position $_token — skipped"
+          fi
+        fi
+      done
+    fi
+
+    for _ext in "${ENABLE_EXTS[@]}"; do
+      # Check if tool is available before enabling
+      if command -v "$_ext" &>/dev/null; then
+        # Toggle enabled: false → enabled: true in extensions.yml
+        sed -i "/name:[[:space:]]*${_ext}/,/enabled:/{s/enabled:[[:space:]]*false/enabled: true/}" "$EXTENSIONS_FILE"
+        success "Enabled extension: $_ext"
+      else
+        warn "$_ext is not installed. Enable anyway?"
+        echo "  Install with: ${EXT_HINTS[$_i]:-check the extensions.yml for install instructions}"
+        echo ""
+        if ask_yn "  Enable $_ext without installing? (verify-ci.sh will remind you)" "n"; then
+          sed -i "/name:[[:space:]]*${_ext}/,/enabled:/{s/enabled:[[:space:]]*false/enabled: true/}" "$EXTENSIONS_FILE"
+          success "Enabled extension: $_ext (not yet installed — verify-ci.sh will show install instructions)"
+        else
+          info "Skipped $_ext — enable later by editing clear/extensions.yml"
+        fi
+      fi
+    done
+  else
+    info "No extensions enabled — edit clear/extensions.yml later to enable"
+  fi
+else
+  info "No extensions.yml found — extensions will be available after bootstrap"
+fi
+
+# ─── Step 8: First experiment ─────────────────────────────────────────────────
+
+header "CLEAR Setup — Step 8: Your First Experiment"
 
 echo "The fastest way to see CLEAR working is to pick ONE existing code"
 echo "review comment that you write every PR."

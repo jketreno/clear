@@ -248,6 +248,194 @@ check_autonomy() {
   fi
 }
 
+# ─── Extensions ──────────────────────────────────────────────────────────────
+# Optional tool extensions configured in clear/extensions.yml.
+# Each extension wraps an external tool. If enabled but not installed,
+# verify-ci.sh fails with install instructions (never auto-installs).
+
+check_extensions() {
+  local extensions_file="$PROJECT_ROOT/clear/extensions.yml"
+  [[ -f "$extensions_file" ]] || return 0
+
+  # Parse enabled extensions from YAML (lightweight awk — no yq dependency)
+  local in_extension=false
+  local ext_name="" ext_enabled="" ext_command="" ext_install="" ext_url=""
+  local ext_threshold="" ext_paths="" ext_extra="" ext_file_types="" ext_exclude=""
+
+  process_pending_extension() {
+    if [[ -n "$ext_name" && "$ext_enabled" == "true" ]]; then
+      run_extension "$ext_name" "$ext_command" "$ext_install" "$ext_url" \
+                    "$ext_threshold" "$ext_paths" "$ext_extra" \
+                    "$ext_file_types" "$ext_exclude"
+    fi
+  }
+
+  while IFS= read -r line; do
+    # Detect start of a new extension block
+    if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*name:[[:space:]]*(.*) ]]; then
+      process_pending_extension
+      ext_name="${BASH_REMATCH[1]}"
+      ext_name="${ext_name#\"}" ; ext_name="${ext_name%\"}"
+      ext_enabled="" ; ext_command="" ; ext_install="" ; ext_url=""
+      ext_threshold="" ; ext_paths="" ; ext_extra=""
+      ext_file_types="" ; ext_exclude=""
+      in_extension=true
+      continue
+    fi
+
+    $in_extension || continue
+
+    if [[ "$line" =~ ^[[:space:]]*enabled:[[:space:]]*(.*) ]]; then
+      ext_enabled="${BASH_REMATCH[1]}"
+      ext_enabled="${ext_enabled#\"}" ; ext_enabled="${ext_enabled%\"}"
+    elif [[ "$line" =~ ^[[:space:]]*command:[[:space:]]*(.*) ]]; then
+      ext_command="${BASH_REMATCH[1]}"
+      ext_command="${ext_command#\"}" ; ext_command="${ext_command%\"}"
+    elif [[ "$line" =~ ^[[:space:]]*install_hint:[[:space:]]*(.*) ]]; then
+      ext_install="${BASH_REMATCH[1]}"
+      ext_install="${ext_install#\"}" ; ext_install="${ext_install%\"}"
+    elif [[ "$line" =~ ^[[:space:]]*project_url:[[:space:]]*(.*) ]]; then
+      ext_url="${BASH_REMATCH[1]}"
+      ext_url="${ext_url#\"}" ; ext_url="${ext_url%\"}"
+    elif [[ "$line" =~ ^[[:space:]]*threshold:[[:space:]]*(.*) ]]; then
+      ext_threshold="${BASH_REMATCH[1]}"
+    elif [[ "$line" =~ ^[[:space:]]*paths:[[:space:]]*(.*) ]]; then
+      ext_paths="${BASH_REMATCH[1]}"
+      ext_paths="${ext_paths#\"}" ; ext_paths="${ext_paths%\"}"
+    elif [[ "$line" =~ ^[[:space:]]*extra_flags:[[:space:]]*(.*) ]]; then
+      ext_extra="${BASH_REMATCH[1]}"
+      ext_extra="${ext_extra#\"}" ; ext_extra="${ext_extra%\"}"
+    elif [[ "$line" =~ ^[[:space:]]*file_types:[[:space:]]*(.*) ]]; then
+      ext_file_types="${BASH_REMATCH[1]}"
+      ext_file_types="${ext_file_types#\"}" ; ext_file_types="${ext_file_types%\"}"
+    elif [[ "$line" =~ ^[[:space:]]*exclude:[[:space:]]*(.*) ]]; then
+      ext_exclude="${BASH_REMATCH[1]}"
+      ext_exclude="${ext_exclude#\"}" ; ext_exclude="${ext_exclude%\"}"
+    fi
+  done < "$extensions_file"
+
+  # Process the last extension
+  process_pending_extension
+}
+
+run_extension() {
+  local name="$1" command="$2" install_hint="$3" url="$4"
+  local threshold="$5" paths="$6" extra="$7"
+  local file_types="${8:-}" exclude="${9:-}"
+
+  section "Extension: $name"
+
+  # Check if the tool is installed
+  if ! command -v "$command" &>/dev/null; then
+    fail "Extension '$name': '$command' not found"
+    echo ""
+    echo -e "${RED}   '$name' is enabled in clear/extensions.yml but '$command' is not installed.${NC}"
+    echo ""
+    echo -e "${RED}   To install:  ${YELLOW}${install_hint}${NC}"
+    [[ -n "$url" ]] && echo -e "${RED}   Project:     ${YELLOW}${url}${NC}"
+    echo ""
+    echo -e "${RED}   To disable this extension:${NC}"
+    echo -e "${RED}     Edit clear/extensions.yml and set enabled: false for '$name'${NC}"
+    echo ""
+    return 1
+  fi
+
+  # Build and run the extension command
+  case "$name" in
+    lizard)
+      local lizard_cmd="cd '$PROJECT_ROOT' && lizard"
+      [[ -n "$threshold" ]] && lizard_cmd="$lizard_cmd --CCN $threshold"
+      [[ -n "$extra" ]]     && lizard_cmd="$lizard_cmd $extra"
+      [[ -n "$paths" ]]     && lizard_cmd="$lizard_cmd $paths"
+      run_check "Lizard (cyclomatic complexity)" "$lizard_cmd 2>&1" || true
+      ;;
+    file-size)
+      run_file_size_check "$threshold" "$paths" "$file_types" "$exclude"
+      ;;
+    *)
+      warn "Unknown extension '$name' — skipping (no built-in handler)"
+      warn "Add a handler in verify-ci.sh or use verify-local.sh for custom checks"
+      ;;
+  esac
+}
+
+run_file_size_check() {
+  local max_lines="${1:-300}"
+  local scan_paths="${2:-src}"
+  local file_types="${3:-ts tsx jsx}"
+  local exclude_patterns="${4:-}"
+
+  # Build find command for the specified file types and paths
+  local find_args=()
+  for scan_path in $scan_paths; do
+    local abs_path="$PROJECT_ROOT/$scan_path"
+    [[ -d "$abs_path" ]] || continue
+    find_args+=("$abs_path")
+  done
+
+  if [[ ${#find_args[@]} -eq 0 ]]; then
+    warn "File size check: no scan paths found (configured: $scan_paths)"
+    return 0
+  fi
+
+  # Build -name patterns for file types
+  local name_args=()
+  local first=true
+  for ext in $file_types; do
+    if $first; then
+      name_args+=("-name" "*.${ext}")
+      first=false
+    else
+      name_args+=("-o" "-name" "*.${ext}")
+    fi
+  done
+
+  # Find all matching files
+  local oversized_files=()
+  local oversized_counts=()
+
+  while IFS= read -r filepath; do
+    [[ -z "$filepath" ]] && continue
+
+    # Check exclude patterns
+    local skip=false
+    for pattern in $exclude_patterns; do
+      case "$(basename "$filepath")" in
+        $pattern) skip=true; break ;;
+      esac
+      # Also check if path contains an excluded directory name
+      case "$filepath" in
+        */"$pattern"/*) skip=true; break ;;
+      esac
+    done
+    $skip && continue
+
+    # Count non-blank, non-comment lines (approximation — counts code lines)
+    local line_count
+    line_count=$(wc -l < "$filepath")
+
+    if [[ "$line_count" -gt "$max_lines" ]]; then
+      local rel_path="${filepath#"$PROJECT_ROOT"/}"
+      oversized_files+=("$rel_path")
+      oversized_counts+=("$line_count")
+    fi
+  done < <(find "${find_args[@]}" -type f \( "${name_args[@]}" \) 2>/dev/null)
+
+  if [[ ${#oversized_files[@]} -eq 0 ]]; then
+    pass "File size (all files under $max_lines lines)"
+  else
+    fail "File size (${#oversized_files[@]} file(s) exceed $max_lines lines)"
+    echo ""
+    for i in "${!oversized_files[@]}"; do
+      echo -e "${RED}   ${oversized_files[$i]}: ${oversized_counts[$i]} lines (max: $max_lines)${NC}"
+    done
+    echo ""
+    echo -e "${YELLOW}   Split large files into smaller, focused modules.${NC}"
+    echo -e "${YELLOW}   Adjust the threshold in clear/extensions.yml if needed.${NC}"
+    echo ""
+  fi
+}
+
 # ─── Local Project Checks ────────────────────────────────────────────────────
 # Source verify-local.sh if it exists. That file is project-owned (never
 # overwritten by CLEAR updates) and can call run_check, pass, fail, info,
@@ -284,6 +472,7 @@ main() {
   check_tests
   check_architecture
   check_autonomy
+  check_extensions
   source_local_checks
 
   echo ""

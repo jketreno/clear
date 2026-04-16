@@ -138,6 +138,7 @@ Wait for approval before writing code.
 | Path | Purpose |
 |------|---------|
 | `clear/autonomy.yml` | Autonomy boundaries + sources of truth |
+| `clear/extensions.yml` | Optional tool extensions (Lizard, etc.) — project-owned |
 | `clear/principles.md` | Five CLEAR principles quick reference |
 | `scripts/verify-ci.sh` | CI enforcement — run before completing work (CLEAR-owned) |
 | `scripts/verify-local.sh` | Project-specific checks — add your checks here |
