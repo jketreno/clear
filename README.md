@@ -45,7 +45,7 @@ flowchart TD
 | **C** | **Constrained** | Architecture rules are enforced by scripts and tests, not code review |
 | **L** | **Limited** | Modules are tagged `full-autonomy`, `supervised`, or `humans-only` |
 | **E** | **Ephemeral** | Generated code is regenerated from source, never hand-edited |
-| **A** | **Assertive** | Tests enforce invariants, not just confirm the current implementation |
+| **A** | **Assertive** | Tests enforce what must always be true, not just confirm the current implementation |
 | **R** | **Reality-Aligned** | Domain models derive from a declared single source of truth |
 
 ---
@@ -190,6 +190,7 @@ scripts/
 
 clear/
   autonomy.yml          — Module boundaries (full-autonomy / supervised / humans-only)
+  extensions.yml        — Optional tool extensions (e.g., Lizard complexity analysis)
   principles.md         — AI quick-reference card (read at session start)
 
 templates/

@@ -274,7 +274,7 @@ Would you like me to implement this?
 
 ...and the AI generates the test framework.
 
-Now you review it--if the tests aren't good, AI won't be constrained. Most teams think they have good tests, but many are only confirmation tests. They verify the implementation, not the invariants. What you want are **constraint tests**. What do I mean?
+Now you review it--if the tests aren't good, AI won't be constrained. Most teams think they have good tests, but many are only confirmation tests. They verify what the code does today, not what must always be true. What you want are **constraint tests**. What do I mean?
 
 **Weak vs strong:**
 
@@ -287,7 +287,7 @@ it('creates a user', () => {
 ```
 
 ```ts
-// ✅ Strong test: enforces invariant
+// ✅ Strong test: enforces a rule that must always hold
 it('never creates duplicate users for the same email', () => {
   fc.assert(
     fc.property(fc.emailAddress(), email => {
@@ -309,12 +309,12 @@ Provide feedback to the AI's implementation; focus it to create tests capturing 
 > If your tests fail after regenerating the implementation, they are doing their job.  
 > If your tests pass, either:
 >
-> - your tests fully capture the intended invariants (**success!**), or
+> - your tests fully capture what must be true (**success!**), or
 > - they are too weak to catch subtle violations (**warning!**).
 
 That distinction matters. Passing tests after regeneration is not automatically proof of bad tests. It may mean your tests and definitions are strong enough that the AI can reliably recreate the implementation. That's the goal. But most teams should treat a clean pass as something to validate, not assume.
 
-- Extract invariants from PR comments or team rules.
+- Extract rules from PR comments or team knowledge.
 - Look for phrases like:
   - "this should never happen"
   - "we always guarantee..."
