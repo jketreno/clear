@@ -28,14 +28,14 @@ modules:
 
   - path: "templates"
     level: full-autonomy
-    reason: "Copy-paste templates, skills, and example tests — intended to be adapted freely"
+    reason: "Copy-paste templates, skills, and example tests — intended to be adapted freely, including templates/**/verify-ci.sh"
 
   # ── Supervised ─────────────────────────────────────────────────────────────
   # Framework behavior and published docs; AI may draft, humans should review.
 
   - path: "scripts/verify-ci.sh"
     level: humans-only
-    reason: "CLEAR-owned enforcement script — updated by update-project.sh, not hand-edited"
+    reason: "Only the repository root scripts/verify-ci.sh is CLEAR-owned and humans-only; template copies under templates/ remain editable"
 
   - path: "scripts/verify-local.sh"
     level: supervised

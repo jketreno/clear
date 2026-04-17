@@ -47,6 +47,8 @@ Fill in the actual values by reading the files. Show this block **once per sessi
 
 **Before modifying any file**, look up its path in `clear/autonomy.yml`:
 
+Scope note for this repository: `humans-only` for `scripts/verify-ci.sh` applies only to the repository root path. Files under `templates/` (including `templates/**/verify-ci.sh`) follow the `templates` boundary and are editable.
+
 | Level | What to do |
 |-------|-----------|
 | `full-autonomy` | Proceed freely |
@@ -140,7 +142,7 @@ Wait for approval before writing code.
 | `clear/autonomy.yml` | Autonomy boundaries + sources of truth |
 | `clear/extensions.yml` | Optional tool extensions (Lizard, etc.) — project-owned |
 | `clear/principles.md` | Five CLEAR principles quick reference |
-| `scripts/verify-ci.sh` | CI enforcement — run before completing work (CLEAR-owned) |
+| `scripts/verify-ci.sh` | Root CI enforcement script — run before completing work (CLEAR-owned) |
 | `scripts/verify-local.sh` | Project-specific checks — add your checks here |
 | `scripts/setup-clear.sh` | One-time setup wizard |
 | `templates/architecture-tests/` | Architecture test examples |
