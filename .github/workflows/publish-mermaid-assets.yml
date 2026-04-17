@@ -1,0 +1,56 @@
+name: Publish Mermaid Assets
+
+"on":
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - README.md
+      - assets/diagrams/**
+      - scripts/render-mermaid-assets.sh
+      - .github/workflows/publish-mermaid-assets.yml
+
+permissions:
+  contents: read
+
+jobs:
+  render-assets:
+    name: Render markdown and LinkedIn diagram assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Make scripts executable
+        run: chmod +x scripts/*.sh
+
+      - name: Render Mermaid assets
+        run: ./scripts/render-mermaid-assets.sh
+
+      - name: Render Mermaid assets (with beautiful-mermaid)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.render_beautiful == true }}
+        run: ./scripts/render-mermaid-assets.sh --with-beautiful
+
+      - name: Upload rendered markdown artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: markdown-mermaid-assets
+          path: |
+            assets/publish/readme.rendered.md
+            assets/publish/*.svg
+          if-no-files-found: error
+
+      - name: Upload LinkedIn image artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linkedin-mermaid-assets
+          path: |
+            assets/publish/linkedin/*.png
+            assets/publish/linkedin/*.svg
+          if-no-files-found: error

@@ -66,6 +66,123 @@ run_check() {
   fi
 }
 
+list_project_files_respecting_gitignore() {
+  if command -v git >/dev/null 2>&1 && git -C "$PROJECT_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    (
+      cd "$PROJECT_ROOT"
+      # Tracked + untracked files, respecting .gitignore/.git/info/exclude/global excludes.
+      git ls-files -co --exclude-standard
+    )
+  else
+    find "$PROJECT_ROOT" -type f \
+      ! -path "*/.git/*" \
+      ! -path "*/node_modules/*" \
+      ! -path "*/.venv/*" \
+      ! -path "*/venv/*" \
+      ! -path "*/dist/*" \
+      ! -path "*/build/*" \
+      ! -path "*/coverage/*" \
+      | sed "s#^$PROJECT_ROOT/##"
+  fi
+}
+
+is_default_ignored_path() {
+  local rel_path="$1"
+  case "$rel_path" in
+    node_modules/*|*/node_modules/*|.venv/*|*/.venv/*|venv/*|*/venv/*|.git/*|*/.git/*|dist/*|*/dist/*|build/*|*/build/*|coverage/*|*/coverage/*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+path_within_scan_paths() {
+  local rel_path="$1"
+  local scan_paths="$2"
+
+  [[ -z "$scan_paths" ]] && return 0
+
+  for scan_path in $scan_paths; do
+    scan_path="${scan_path#./}"
+    [[ "$scan_path" == "." ]] && return 0
+    [[ -z "$scan_path" ]] && continue
+    if [[ "$rel_path" == "$scan_path" || "$rel_path" == "$scan_path/"* ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+matches_any_file_type() {
+  local rel_path="$1"
+  local file_types="$2"
+
+  [[ -z "$file_types" ]] && return 0
+
+  for ext in $file_types; do
+    case "$rel_path" in
+      *."$ext") return 0 ;;
+    esac
+  done
+  return 1
+}
+
+is_extension_excluded() {
+  local rel_path="$1"
+  local exclude_patterns="$2"
+  local base_name
+  base_name="$(basename "$rel_path")"
+
+  for pattern in $exclude_patterns; do
+    case "$base_name" in
+      $pattern) return 0 ;;
+    esac
+    case "$rel_path" in
+      $pattern|$pattern/*|*/$pattern|*/$pattern/*) return 0 ;;
+    esac
+  done
+
+  return 1
+}
+
+run_lizard_check() {
+  local threshold="$1"
+  local scan_paths="$2"
+  local extra_flags="$3"
+  local exclude_patterns="$4"
+
+  local lizard_files=()
+  while IFS= read -r rel_path; do
+    [[ -z "$rel_path" ]] && continue
+    is_default_ignored_path "$rel_path" && continue
+    path_within_scan_paths "$rel_path" "$scan_paths" || continue
+    is_extension_excluded "$rel_path" "$exclude_patterns" && continue
+
+    local abs_path="$PROJECT_ROOT/$rel_path"
+    [[ -f "$abs_path" ]] || continue
+    lizard_files+=("$abs_path")
+  done < <(list_project_files_respecting_gitignore)
+
+  if [[ ${#lizard_files[@]} -eq 0 ]]; then
+    warn "Lizard: no files matched configured paths (configured: $scan_paths)"
+    return 0
+  fi
+
+  local lizard_cmd=("lizard")
+  [[ -n "$threshold" ]] && lizard_cmd+=("--CCN" "$threshold")
+  if [[ -n "$extra_flags" ]]; then
+    # Intentional word splitting for a user-specified flag string.
+    # shellcheck disable=SC2206
+    local extra_parts=($extra_flags)
+    lizard_cmd+=("${extra_parts[@]}")
+  fi
+  lizard_cmd+=("${lizard_files[@]}")
+
+  local cmd_string
+  printf -v cmd_string '%q ' "${lizard_cmd[@]}"
+  run_check "Lizard (cyclomatic complexity)" "$cmd_string 2>&1" || true
+}
+
 # ─── Project Type Detection ───────────────────────────────────────────────────
 
 detect_project() {
@@ -343,11 +460,7 @@ run_extension() {
   # Build and run the extension command
   case "$name" in
     lizard)
-      local lizard_cmd="cd '$PROJECT_ROOT' && lizard"
-      [[ -n "$threshold" ]] && lizard_cmd="$lizard_cmd --CCN $threshold"
-      [[ -n "$extra" ]]     && lizard_cmd="$lizard_cmd $extra"
-      [[ -n "$paths" ]]     && lizard_cmd="$lizard_cmd $paths"
-      run_check "Lizard (cyclomatic complexity)" "$lizard_cmd 2>&1" || true
+      run_lizard_check "$threshold" "$paths" "$extra" "$exclude"
       ;;
     file-size)
       run_file_size_check "$threshold" "$paths" "$file_types" "$exclude"
@@ -364,62 +477,34 @@ run_file_size_check() {
   local scan_paths="${2:-src}"
   local file_types="${3:-ts tsx jsx}"
   local exclude_patterns="${4:-}"
-
-  # Build find command for the specified file types and paths
-  local find_args=()
-  for scan_path in $scan_paths; do
-    local abs_path="$PROJECT_ROOT/$scan_path"
-    [[ -d "$abs_path" ]] || continue
-    find_args+=("$abs_path")
-  done
-
-  if [[ ${#find_args[@]} -eq 0 ]]; then
-    warn "File size check: no scan paths found (configured: $scan_paths)"
-    return 0
-  fi
-
-  # Build -name patterns for file types
-  local name_args=()
-  local first=true
-  for ext in $file_types; do
-    if $first; then
-      name_args+=("-name" "*.${ext}")
-      first=false
-    else
-      name_args+=("-o" "-name" "*.${ext}")
-    fi
-  done
-
-  # Find all matching files
   local oversized_files=()
   local oversized_counts=()
+  local checked_files=0
 
-  while IFS= read -r filepath; do
-    [[ -z "$filepath" ]] && continue
+  while IFS= read -r rel_path; do
+    [[ -z "$rel_path" ]] && continue
+    is_default_ignored_path "$rel_path" && continue
+    path_within_scan_paths "$rel_path" "$scan_paths" || continue
+    matches_any_file_type "$rel_path" "$file_types" || continue
+    is_extension_excluded "$rel_path" "$exclude_patterns" && continue
 
-    # Check exclude patterns
-    local skip=false
-    for pattern in $exclude_patterns; do
-      case "$(basename "$filepath")" in
-        $pattern) skip=true; break ;;
-      esac
-      # Also check if path contains an excluded directory name
-      case "$filepath" in
-        */"$pattern"/*) skip=true; break ;;
-      esac
-    done
-    $skip && continue
+    local filepath="$PROJECT_ROOT/$rel_path"
+    [[ -f "$filepath" ]] || continue
 
-    # Count non-blank, non-comment lines (approximation — counts code lines)
     local line_count
     line_count=$(wc -l < "$filepath")
+    ((checked_files += 1))
 
     if [[ "$line_count" -gt "$max_lines" ]]; then
-      local rel_path="${filepath#"$PROJECT_ROOT"/}"
       oversized_files+=("$rel_path")
       oversized_counts+=("$line_count")
     fi
-  done < <(find "${find_args[@]}" -type f \( "${name_args[@]}" \) 2>/dev/null)
+  done < <(list_project_files_respecting_gitignore)
+
+  if [[ "$checked_files" -eq 0 ]]; then
+    warn "File size check: no files matched configured paths/types (paths: $scan_paths, types: $file_types)"
+    return 0
+  fi
 
   if [[ ${#oversized_files[@]} -eq 0 ]]; then
     pass "File size (all files under $max_lines lines)"

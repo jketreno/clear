@@ -6,6 +6,20 @@ Format: [semantic version] — date — summary of changes.
 
 ---
 
+## [Unreleased]
+
+### Added
+- `scripts/render-mermaid-assets.sh` — render Mermaid markdown diagrams with `beautiful-mermaid` to SVG and LinkedIn-ready PNG assets
+- `.github/workflows/publish-mermaid-assets.yml` — workflow to generate and upload Mermaid publish artifacts
+- `assets/diagrams/clear-overview.mmd` — source diagram for social image exports
+
+### Changed
+- `README.md` — added Mermaid asset publishing section with local and CI usage
+- `scripts/render-mermaid-assets.sh` — removed Mermaid CLI support and switched to Beautiful-only rendering
+- `.github/workflows/publish-mermaid-assets.yml` — removed dual-render branching and now publishes Beautiful-generated assets only
+
+---
+
 ## [1.1.0] — 2025-04-14
 
 ### Added
