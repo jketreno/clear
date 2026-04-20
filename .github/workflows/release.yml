@@ -1,0 +1,72 @@
+name: Release
+
+"on":
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (defaults to VERSION file)"
+        required: false
+        type: string
+      notes_file:
+        description: "Optional release notes file path"
+        required: false
+        type: string
+      skip_verify:
+        description: "Skip verify-ci gate (break-glass)"
+        required: false
+        type: boolean
+        default: false
+      no_sign:
+        description: "Skip checksum signature generation (break-glass)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Make scripts executable
+        run: chmod +x scripts/*.sh
+
+      - name: Import GPG private key
+        if: ${{ inputs.no_sign != true }}
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.CLEAR_RELEASE_GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.CLEAR_RELEASE_GPG_PASSPHRASE }}
+
+      - name: Run release script
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          args=(--yes)
+
+          if [ -n "${{ inputs.version }}" ]; then
+            args+=(--version "${{ inputs.version }}")
+          fi
+
+          if [ -n "${{ inputs.notes_file }}" ]; then
+            args+=(--notes-file "${{ inputs.notes_file }}")
+          fi
+
+          if [ "${{ inputs.skip_verify }}" = "true" ]; then
+            args+=(--skip-verify)
+          fi
+
+          if [ "${{ inputs.no_sign }}" = "true" ]; then
+            args+=(--no-sign)
+          fi
+
+          ./scripts/release.sh "${args[@]}"

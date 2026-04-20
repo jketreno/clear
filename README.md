@@ -205,6 +205,9 @@ scripts/
   setup-clear.sh        — Interactive setup wizard
   bootstrap-project.sh  — Copy CLEAR into an existing project
   update-project.sh     — Sync a bootstrapped project with the latest CLEAR seed
+  release.sh            — Create tagged GitHub release with installer artifacts
+  build-release-installer.sh — Build self-extracting installer + checksums + signatures
+  verify-release-artifacts.sh — Verify detached signature and checksum integrity
 
 clear/
   autonomy.yml          — Module boundaries (full-autonomy / supervised / humans-only)
@@ -274,6 +277,49 @@ Mermaid source/config files:
 
 ---
 
+## Release Flow (Signed Installer)
+
+Build and publish a release from a clean `main` branch:
+
+```bash
+./scripts/release.sh --yes
+```
+
+The release publishes three artifacts:
+
+- `clear-installer-vX.Y.Z.sh`
+- `clear-installer-vX.Y.Z.sha256`
+- `clear-installer-vX.Y.Z.sha256.asc`
+
+Public verification key in-repo:
+
+- `docs/keys/clear-release-signing-public.asc`
+
+Signing key fingerprint:
+
+- `35CD F523 D2E6 E479 53FC A25F A404 671B FB78 0D6E`
+
+Before running the installer, verify signature and checksum:
+
+```bash
+gpg --verify clear-installer-vX.Y.Z.sha256.asc clear-installer-vX.Y.Z.sha256
+sha256sum -c clear-installer-vX.Y.Z.sha256
+```
+
+Installer entrypoint supports install/update and extract mode:
+
+```bash
+# Install or update in one command
+bash clear-installer-vX.Y.Z.sh --target /path/to/repo
+
+# Extract payload for inspection without install/update
+bash clear-installer-vX.Y.Z.sh --extract /tmp/clear-extract
+```
+
+Default installer behavior leaves no extraction artifacts outside the target repository.
+
+---
+
 ## Learn More
 
 | Topic | Document |
@@ -288,4 +334,7 @@ Mermaid source/config files:
 | Claude Code setup | [docs/ai-tools/claude.md](docs/ai-tools/claude.md) |
 | Cursor setup | [docs/ai-tools/cursor.md](docs/ai-tools/cursor.md) |
 | Agentic workflows & MCP | [docs/agentic.md](docs/agentic.md) |
+| Release runbook | [docs/release.md](docs/release.md) |
+| Release verification | [docs/security-release-verification.md](docs/security-release-verification.md) |
+| Release notes template | [docs/release-notes-template.md](docs/release-notes-template.md) |
 | Origin & philosophy | [ORIGIN.md](ORIGIN.md) |
