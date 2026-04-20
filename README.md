@@ -8,6 +8,20 @@
 
 CLEAR keeps your architecture rules **enforced, not suggested** when working with AI coding tools — from single-session assistants to multi-agent pipelines. One script. Five principles. Works with GitHub Copilot, Claude Code, Cursor, and MCP-compatible agent frameworks.
 
+### CLEAR in 60 Seconds
+
+Your architecture rules live in code reviews and tribal knowledge. AI can't read any of that — so it generates code that works but violates your patterns.
+
+CLEAR fixes this: define your rules as automated checks, tell the AI to run them before finishing, and let it self-correct. The AI generates code, runs `verify-ci.sh`, sees the failure, fixes it, and reports done — you never see the violation.
+
+**Get started in three commands:**
+
+```bash
+git clone https://github.com/jketreno/clear && cd clear
+./scripts/bootstrap-project.sh /path/to/your-project
+./scripts/verify-ci.sh   # see it in action
+```
+
 ---
 
 ## How It Works
@@ -208,6 +222,7 @@ templates/
   architecture-tests/   — Copy-paste test templates (API rules, type sync, autonomy guard)
   skills/               — AI skill files for type sync, API endpoints, reality tests
   linting/              — ESLint config templates (flat, legacy, React/TSX)
+  git-hooks/            — Pre-commit hook that runs verify-ci.sh
   github-actions/       — CI/CD workflow template
 
 .github/                — Copilot configs for developing the CLEAR seed repo itself

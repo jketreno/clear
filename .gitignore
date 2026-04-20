@@ -52,6 +52,7 @@ clear/local-overrides.yml
 
 # Personal planning docs
 GAMEPLAN.md
+POST-*.md
 
 # Logs
 *.log

@@ -537,7 +537,7 @@ Want to see a complete working example? Check out the CLEAR bootstrap project at
 
 ## What I'm Seeing Work
 
-In my own work and across teams I've worked with, the pattern is consistent: once architecture rules are enforced rather than suggested, 60-80% of infrastructure code becomes safely AI-generated. Well-constrained modules see 3-5x velocity gains. Review time drops dramatically — you're reviewing constraints and tests, not implementations. Architecture drift drops to near zero because the build catches violations before humans ever see them. CI/CD failures become rare — issues are caught and fixed locally by AI before code is ever pushed.
+In my own work and across teams I've worked with, the pattern is consistent: once architecture rules are enforced rather than suggested, the majority of infrastructure code becomes safely AI-generated. Well-constrained modules see significant velocity gains — in some cases several times faster than manual implementation. Review time drops dramatically — you're reviewing constraints and tests, not implementations. Architecture drift drops to near zero because the build catches violations before humans ever see them. CI/CD failures become rare — issues are caught and fixed locally by AI before code is ever pushed.
 
 But also: more time spent upfront defining contracts and boundaries. This isn't free. You're trading code review time for architecture definition time.
 
