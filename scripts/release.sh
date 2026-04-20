@@ -46,7 +46,7 @@ generate_release_notes() {
 
   local fingerprint="(unavailable)"
   if [[ -f "$fingerprint_file" ]]; then
-    fingerprint="$(tr -s ' ' < "$fingerprint_file" | sed 's/^ //; s/ $//')"
+    fingerprint="$(tr -s ' ' <"$fingerprint_file" | sed 's/^ //; s/ $//')"
   fi
 
   local signature_section
@@ -68,9 +68,9 @@ generate_release_notes() {
         gsub(/\{\{FINGERPRINT\}\}/, fingerprint)
         gsub(/\{\{SIGNATURE_SECTION\}\}/, signature_section)
         print
-      }' "$template_file" > "$output_file"
+      }' "$template_file" >"$output_file"
   else
-    cat > "$output_file" <<EOF
+    cat >"$output_file" <<EOF
 # CLEAR v${version}
 
 ## Release Artifacts
@@ -123,7 +123,7 @@ while [[ $# -gt 0 ]]; do
       SIGN_ARTIFACTS=false
       shift
       ;;
-    --help|-h)
+    --help | -h)
       cat <<'EOF'
 Usage: ./scripts/release.sh [options]
 

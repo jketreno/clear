@@ -11,9 +11,9 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 RESET='\033[0m'
 
-rl_info()  { echo -e "${CYAN}INFO ${RESET}$*"; }
-rl_ok()    { echo -e "${GREEN}OK   ${RESET}$*"; }
-rl_warn()  { echo -e "${YELLOW}WARN ${RESET}$*"; }
+rl_info() { echo -e "${CYAN}INFO ${RESET}$*"; }
+rl_ok() { echo -e "${GREEN}OK   ${RESET}$*"; }
+rl_warn() { echo -e "${YELLOW}WARN ${RESET}$*"; }
 rl_error() { echo -e "${RED}ERR  ${RESET}$*" >&2; }
 
 rl_die() {
@@ -43,7 +43,7 @@ rl_read_version_file() {
   local version_file="$1"
   [[ -f "$version_file" ]] || rl_die 3 "VERSION file not found: $version_file"
   local version
-  version="$(tr -d '[:space:]' < "$version_file")"
+  version="$(tr -d '[:space:]' <"$version_file")"
   [[ -n "$version" ]] || rl_die 3 "VERSION file is empty: $version_file"
   rl_validate_semver "$version" || rl_die 3 "Invalid semantic version in VERSION: $version"
   echo "$version"

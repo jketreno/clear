@@ -22,11 +22,11 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
-info()    { echo -e "${CYAN}ℹ ${RESET}$*"; }
+info() { echo -e "${CYAN}ℹ ${RESET}$*"; }
 success() { echo -e "${GREEN}✅ ${RESET}$*"; }
-warn()    { echo -e "${YELLOW}⚠  ${RESET}$*"; }
-error()   { echo -e "${RED}❌ ${RESET}$*" >&2; }
-header()  { echo -e "\n${BOLD}$*${RESET}"; }
+warn() { echo -e "${YELLOW}⚠  ${RESET}$*"; }
+error() { echo -e "${RED}❌ ${RESET}$*" >&2; }
+header() { echo -e "\n${BOLD}$*${RESET}"; }
 
 # ── Enable an extension in a target project's extensions.yml
 # Usage: enable_extension <target_dir> <extension_name>
@@ -95,7 +95,7 @@ while [[ $# -gt 0 ]]; do
       ENABLE_EXTENSIONS+=("$2")
       shift 2
       ;;
-    --help|-h)
+    --help | -h)
       echo "Usage: $(basename "$0") [OPTIONS] /path/to/your-project"
       echo ""
       echo "Options:"
@@ -173,7 +173,7 @@ fi
 header "CLEAR Bootstrap"
 echo "  Source : $CLEAR_ROOT"
 echo "  Target : $TARGET_DIR"
-[[ "$DRY_RUN"  == true ]] && warn "Dry-run mode — no files will be written."
+[[ "$DRY_RUN" == true ]] && warn "Dry-run mode — no files will be written."
 [[ "$INCLUDE_TEMPLATES" == false ]] && warn "Skipping templates/ directory."
 echo ""
 
@@ -202,7 +202,7 @@ copy_item() {
     if [[ "$kind" == "dir" ]]; then
       if [[ "$DRY_RUN" == false ]]; then
         echo -e "  ${YELLOW}Exists${RESET}: $dst_rel/ — merging (existing files preserved)"
-        cp -r "$src/." "$dst/" --update=none 2>/dev/null || cp -rn "$src/." "$dst/" 2>/dev/null   # no-overwrite
+        cp -r "$src/." "$dst/" --update=none 2>/dev/null || cp -rn "$src/." "$dst/" 2>/dev/null # no-overwrite
       else
         echo -e "  ${YELLOW}Would merge${RESET}: $dst_rel/ (existing files preserved)"
       fi
@@ -230,13 +230,13 @@ copy_item() {
 
 header "Copying files..."
 for item in "${COPY_ITEMS[@]}"; do
-  read -r src_rel dst_rel kind <<< "$item"
+  read -r src_rel dst_rel kind <<<"$item"
   copy_item "$src_rel" "$dst_rel" "$kind"
 done
 
 # ── Copy project-owned files only if they don't exist yet
 for item in "${COPY_IF_MISSING[@]}"; do
-  read -r src_rel dst_rel <<< "$item"
+  read -r src_rel dst_rel <<<"$item"
   local_src="$CLEAR_ROOT/$src_rel"
   local_dst="$TARGET_DIR/$dst_rel"
   if [[ -e "$local_dst" ]]; then

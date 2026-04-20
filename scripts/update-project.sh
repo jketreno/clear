@@ -28,11 +28,11 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
-info()    { echo -e "${CYAN}ℹ  ${RESET}$*"; }
+info() { echo -e "${CYAN}ℹ  ${RESET}$*"; }
 success() { echo -e "${GREEN}✅ ${RESET}$*"; }
-warn()    { echo -e "${YELLOW}⚠  ${RESET}$*"; }
-error()   { echo -e "${RED}❌ ${RESET}$*" >&2; }
-header()  { echo -e "\n${BOLD}$*${RESET}"; }
+warn() { echo -e "${YELLOW}⚠  ${RESET}$*"; }
+error() { echo -e "${RED}❌ ${RESET}$*" >&2; }
+header() { echo -e "\n${BOLD}$*${RESET}"; }
 
 # ── Enable an extension in a target project's extensions.yml
 # Usage: enable_extension <target_dir> <extension_name>
@@ -96,7 +96,7 @@ while [[ $# -gt 0 ]]; do
       SETUP_EXTENSIONS=true
       shift
       ;;
-    --help|-h)
+    --help | -h)
       echo "Usage: $(basename "$0") [OPTIONS] [/path/to/your-project]"
       echo ""
       echo "Updates a CLEAR-bootstrapped project to the latest framework templates."
@@ -188,7 +188,7 @@ update_file() {
   local dst_dir
   dst_dir="$(dirname "$dst")"
 
-  if [[ -f "$dst" ]] && diff -q "$src" "$dst" > /dev/null 2>&1; then
+  if [[ -f "$dst" ]] && diff -q "$src" "$dst" >/dev/null 2>&1; then
     echo -e "  ${CYAN}Current ${RESET}: $label"
     CURRENT+=("$label")
     return
@@ -241,10 +241,10 @@ echo "  Target : $TARGET_DIR"
 #   .github/prompts/     — user-installed skills (handled separately below)
 #   .gitignore            — user-customized
 header "Agent configurations..."
-update_dir "$CLEAR_ROOT/templates/agent-configs/.github"  "$TARGET_DIR/.github"  "prompts"
-update_dir "$CLEAR_ROOT/templates/agent-configs/.cursor"  "$TARGET_DIR/.cursor"
-update_dir "$CLEAR_ROOT/templates/agent-configs/.claude"  "$TARGET_DIR/.claude"
-update_dir "$CLEAR_ROOT/templates/agent-configs/.vscode"  "$TARGET_DIR/.vscode"
+update_dir "$CLEAR_ROOT/templates/agent-configs/.github" "$TARGET_DIR/.github" "prompts"
+update_dir "$CLEAR_ROOT/templates/agent-configs/.cursor" "$TARGET_DIR/.cursor"
+update_dir "$CLEAR_ROOT/templates/agent-configs/.claude" "$TARGET_DIR/.claude"
+update_dir "$CLEAR_ROOT/templates/agent-configs/.vscode" "$TARGET_DIR/.vscode"
 update_file \
   "$CLEAR_ROOT/templates/agent-configs/CLAUDE.md" \
   "$TARGET_DIR/CLAUDE.md"
@@ -254,10 +254,10 @@ update_file \
 
 # ── 2. CLEAR-managed scripts (always updated)
 header "CLEAR scripts..."
-update_file "$CLEAR_ROOT/scripts/verify-ci.sh"         "$TARGET_DIR/scripts/verify-ci.sh"
-update_file "$CLEAR_ROOT/scripts/setup-clear.sh"       "$TARGET_DIR/scripts/setup-clear.sh"
+update_file "$CLEAR_ROOT/scripts/verify-ci.sh" "$TARGET_DIR/scripts/verify-ci.sh"
+update_file "$CLEAR_ROOT/scripts/setup-clear.sh" "$TARGET_DIR/scripts/setup-clear.sh"
 update_file "$CLEAR_ROOT/scripts/bootstrap-project.sh" "$TARGET_DIR/scripts/bootstrap-project.sh"
-update_file "$CLEAR_ROOT/scripts/update-project.sh"    "$TARGET_DIR/scripts/update-project.sh"
+update_file "$CLEAR_ROOT/scripts/update-project.sh" "$TARGET_DIR/scripts/update-project.sh"
 
 # ── 3. verify-local.sh — create only if missing (project-owned)
 if [[ ! -f "$TARGET_DIR/scripts/verify-local.sh" ]]; then
@@ -353,37 +353,46 @@ if [[ "$SETUP_EXTENSIONS" == true && "$DRY_RUN" == false ]]; then
     while IFS= read -r line; do
       if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*name:[[:space:]]*(.*) ]]; then
         if [[ -n "$se_name" ]]; then
-          SE_NAMES+=("$se_name"); SE_DESCS+=("$se_desc")
-          SE_HINTS+=("$se_hint"); SE_STATES+=("$se_state")
+          SE_NAMES+=("$se_name")
+          SE_DESCS+=("$se_desc")
+          SE_HINTS+=("$se_hint")
+          SE_STATES+=("$se_state")
         fi
         se_name="${BASH_REMATCH[1]}"
-        se_name="${se_name#\"}" ; se_name="${se_name%\"}"
-        se_desc="" ; se_hint="" ; se_state=""
+        se_name="${se_name#\"}"
+        se_name="${se_name%\"}"
+        se_desc=""
+        se_hint=""
+        se_state=""
       elif [[ "$line" =~ ^[[:space:]]*description:[[:space:]]*(.*) ]]; then
         se_desc="${BASH_REMATCH[1]}"
-        se_desc="${se_desc#\"}" ; se_desc="${se_desc%\"}"
+        se_desc="${se_desc#\"}"
+        se_desc="${se_desc%\"}"
       elif [[ "$line" =~ ^[[:space:]]*install_hint:[[:space:]]*(.*) ]]; then
         se_hint="${BASH_REMATCH[1]}"
-        se_hint="${se_hint#\"}" ; se_hint="${se_hint%\"}"
+        se_hint="${se_hint#\"}"
+        se_hint="${se_hint%\"}"
       elif [[ "$line" =~ ^[[:space:]]*enabled:[[:space:]]*(.*) ]]; then
         se_state="${BASH_REMATCH[1]}"
       fi
-    done < "$EXT_FILE"
+    done <"$EXT_FILE"
     if [[ -n "$se_name" ]]; then
-      SE_NAMES+=("$se_name"); SE_DESCS+=("$se_desc")
-      SE_HINTS+=("$se_hint"); SE_STATES+=("$se_state")
+      SE_NAMES+=("$se_name")
+      SE_DESCS+=("$se_desc")
+      SE_HINTS+=("$se_hint")
+      SE_STATES+=("$se_state")
     fi
 
     for _i in "${!SE_NAMES[@]}"; do
       local_status="disabled"
       [[ "${SE_STATES[$_i]}" == "true" ]] && local_status="ENABLED"
-      printf "  %d. %-12s — %s [%s]\n" "$((_i+1))" "${SE_NAMES[$_i]}" "${SE_DESCS[$_i]}" "$local_status"
+      printf "  %d. %-12s — %s [%s]\n" "$((_i + 1))" "${SE_NAMES[$_i]}" "${SE_DESCS[$_i]}" "$local_status"
       printf "     Install: %s\n" "${SE_HINTS[$_i]}"
       echo ""
     done
 
-    printf "${CYAN}  Enter numbers to enable (space-separated), 'all', or press ENTER to skip: ${RESET}" > /dev/tty
-    read -r SE_SELECTION < /dev/tty
+    printf "${CYAN}  Enter numbers to enable (space-separated), 'all', or press ENTER to skip: ${RESET}" >/dev/tty
+    read -r SE_SELECTION </dev/tty
     echo ""
 
     if [[ -n "$SE_SELECTION" ]]; then

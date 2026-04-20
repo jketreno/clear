@@ -29,9 +29,9 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-info()    { echo -e "${BLUE}ℹ  $1${NC}"; }
+info() { echo -e "${BLUE}ℹ  $1${NC}"; }
 success() { echo -e "${GREEN}✅ $1${NC}"; }
-warn()    { echo -e "${YELLOW}⚠  $1${NC}"; }
+warn() { echo -e "${YELLOW}⚠  $1${NC}"; }
 
 header() {
   echo ""
@@ -122,9 +122,9 @@ AUTONOMY_ENTRIES=""
 
 add_autonomy_entry() {
   local path level reason
-  printf "${CYAN}  Path (e.g., src/utils, src/payment) — leave blank to finish: ${NC}" > /dev/tty
-  read -r path < /dev/tty
-  [[ -z "$path" ]] && return 1   # blank = done
+  printf "${CYAN}  Path (e.g., src/utils, src/payment) — leave blank to finish: ${NC}" >/dev/tty
+  read -r path </dev/tty
+  [[ -z "$path" ]] && return 1 # blank = done
   level=$(ask "  Level (full-autonomy / supervised / humans-only)" "supervised")
   reason=$(ask "  Reason (why this level?)" "")
   AUTONOMY_ENTRIES="${AUTONOMY_ENTRIES}
@@ -144,7 +144,7 @@ done
 
 # Write autonomy.yml
 mkdir -p "$PROJECT_ROOT/clear"
-cat > "$PROJECT_ROOT/clear/autonomy.yml" << AUTONOMY_EOF
+cat >"$PROJECT_ROOT/clear/autonomy.yml" <<AUTONOMY_EOF
 # =============================================================================
 # CLEAR autonomy.yml — Module Autonomy Boundaries
 # =============================================================================
@@ -188,9 +188,9 @@ declare -a SYSTEMS=()
 
 add_source_of_truth() {
   local concept source system
-  printf "${CYAN}  Domain concept (e.g., User, Order, Subscription) — leave blank to finish: ${NC}" > /dev/tty
-  read -r concept < /dev/tty
-  [[ -z "$concept" ]] && return 1   # blank = done
+  printf "${CYAN}  Domain concept (e.g., User, Order, Subscription) — leave blank to finish: ${NC}" >/dev/tty
+  read -r concept </dev/tty
+  [[ -z "$concept" ]] && return 1 # blank = done
   source=$(ask "  Source of truth (e.g., database schema, OAuth/IAM provider, protobuf)" "")
   system=$(ask "  System/file that defines it (e.g., idp.users, schema.prisma)" "")
   SOURCES_OF_TRUTH="${SOURCES_OF_TRUTH}
@@ -209,7 +209,7 @@ while true; do
 done
 
 # Append sources of truth to autonomy.yml (always; empty block is harmless)
-cat >> "$PROJECT_ROOT/clear/autonomy.yml" << REALITY_EOF
+cat >>"$PROJECT_ROOT/clear/autonomy.yml" <<REALITY_EOF
 
 # =============================================================================
 # Reality Alignment — Sources of Truth
@@ -291,13 +291,13 @@ if [[ ${#SKILL_FILES[@]} -gt 0 ]]; then
   echo "Available skills (installed to .github/prompts/ for VS Code Copilot):"
   echo ""
   for _i in "${!SKILL_FILES[@]}"; do
-    printf "  %d. %s\n" "$((_i+1))" "${SKILL_NAMES[$_i]}"
+    printf "  %d. %s\n" "$((_i + 1))" "${SKILL_NAMES[$_i]}"
     printf "     %s\n" "${SKILL_DESCS[$_i]}"
     echo ""
   done
 
-  printf "${CYAN}  Enter numbers to install (space-separated), 'all', or press ENTER to skip: ${NC}" > /dev/tty
-  read -r SKILL_SELECTION < /dev/tty
+  printf "${CYAN}  Enter numbers to install (space-separated), 'all', or press ENTER to skip: ${NC}" >/dev/tty
+  read -r SKILL_SELECTION </dev/tty
   echo ""
 
   if [[ -n "$SKILL_SELECTION" ]]; then
@@ -364,19 +364,25 @@ if [[ -f "$EXTENSIONS_FILE" ]]; then
         EXT_URLS+=("$local_url")
       fi
       local_name="${BASH_REMATCH[1]}"
-      local_name="${local_name#\"}" ; local_name="${local_name%\"}"
-      local_desc="" ; local_hint="" ; local_url=""
+      local_name="${local_name#\"}"
+      local_name="${local_name%\"}"
+      local_desc=""
+      local_hint=""
+      local_url=""
     elif [[ "$line" =~ ^[[:space:]]*description:[[:space:]]*(.*) ]]; then
       local_desc="${BASH_REMATCH[1]}"
-      local_desc="${local_desc#\"}" ; local_desc="${local_desc%\"}"
+      local_desc="${local_desc#\"}"
+      local_desc="${local_desc%\"}"
     elif [[ "$line" =~ ^[[:space:]]*install_hint:[[:space:]]*(.*) ]]; then
       local_hint="${BASH_REMATCH[1]}"
-      local_hint="${local_hint#\"}" ; local_hint="${local_hint%\"}"
+      local_hint="${local_hint#\"}"
+      local_hint="${local_hint%\"}"
     elif [[ "$line" =~ ^[[:space:]]*project_url:[[:space:]]*(.*) ]]; then
       local_url="${BASH_REMATCH[1]}"
-      local_url="${local_url#\"}" ; local_url="${local_url%\"}"
+      local_url="${local_url#\"}"
+      local_url="${local_url%\"}"
     fi
-  done < "$EXTENSIONS_FILE"
+  done <"$EXTENSIONS_FILE"
   # Capture the last one
   if [[ -n "$local_name" ]]; then
     EXT_NAMES+=("$local_name")
@@ -386,14 +392,14 @@ if [[ -f "$EXTENSIONS_FILE" ]]; then
   fi
 
   for _i in "${!EXT_NAMES[@]}"; do
-    printf "  %d. %s — %s\n" "$((_i+1))" "${EXT_NAMES[$_i]}" "${EXT_DESCS[$_i]}"
+    printf "  %d. %s — %s\n" "$((_i + 1))" "${EXT_NAMES[$_i]}" "${EXT_DESCS[$_i]}"
     printf "     Install: %s\n" "${EXT_HINTS[$_i]}"
     [[ -n "${EXT_URLS[$_i]}" ]] && printf "     Project: %s\n" "${EXT_URLS[$_i]}"
     echo ""
   done
 
-  printf "${CYAN}  Enter numbers to enable (space-separated), 'all', or press ENTER to skip: ${NC}" > /dev/tty
-  read -r EXT_SELECTION < /dev/tty
+  printf "${CYAN}  Enter numbers to enable (space-separated), 'all', or press ENTER to skip: ${NC}" >/dev/tty
+  read -r EXT_SELECTION </dev/tty
   echo ""
 
   if [[ -n "$EXT_SELECTION" ]]; then

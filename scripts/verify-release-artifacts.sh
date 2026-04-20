@@ -26,7 +26,7 @@ while [[ $# -gt 0 ]]; do
       ARTIFACT_DIR="${2:-}"
       shift 2
       ;;
-    --help|-h)
+    --help | -h)
       cat <<'EOF'
 Usage: ./scripts/verify-release-artifacts.sh --version <semver> --dir <path>
 

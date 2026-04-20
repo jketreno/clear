@@ -40,7 +40,7 @@ while [[ $# -gt 0 ]]; do
       SIGN_ARTIFACTS=false
       shift
       ;;
-    --help|-h)
+    --help | -h)
       cat <<'EOF'
 Usage: ./scripts/build-release-installer.sh --version <semver> [options]
 
@@ -103,7 +103,7 @@ INSTALLER_PATH="$OUTPUT_DIR/$INSTALLER_NAME"
 CHECKSUM_PATH="$OUTPUT_DIR/$CHECKSUM_NAME"
 SIGNATURE_PATH="$OUTPUT_DIR/$SIGNATURE_NAME"
 
-cat > "$INSTALLER_PATH" <<'EOF'
+cat >"$INSTALLER_PATH" <<'EOF'
 #!/usr/bin/env bash
 # CLEAR self-extracting installer
 set -euo pipefail
@@ -279,12 +279,12 @@ exit 0
 __CLEAR_PAYLOAD_BELOW__
 EOF
 
-cat "$PAYLOAD_TARBALL" >> "$INSTALLER_PATH"
+cat "$PAYLOAD_TARBALL" >>"$INSTALLER_PATH"
 chmod +x "$INSTALLER_PATH"
 
 (
   cd "$OUTPUT_DIR"
-  sha256sum "$INSTALLER_NAME" > "$CHECKSUM_NAME"
+  sha256sum "$INSTALLER_NAME" >"$CHECKSUM_NAME"
 )
 
 if [[ "$SIGN_ARTIFACTS" == "true" ]]; then
