@@ -53,7 +53,7 @@ collect_humans_only_paths() {
       [[ -n "$current_path" ]] && out_ref+=("$current_path")
       current_path=""
     fi
-  done < "$autonomy_file"
+  done <"$autonomy_file"
 }
 
 is_humans_only_match() {

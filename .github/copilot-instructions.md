@@ -37,8 +37,6 @@ Fill in the bracketed values from the actual files. Show this block **once per c
 
 Before modifying any file, check `clear/autonomy.yml`:
 
-- Scope note for this repository: `humans-only` for `scripts/verify-ci.sh` applies only to the repository root path. Files under `templates/` (including `templates/**/verify-ci.sh`) follow the `templates` boundary and are editable.
-
 | Level | Action |
 |-------|--------|
 | `full-autonomy` | Proceed freely |
@@ -116,7 +114,7 @@ For complex changes (new feature, refactor, new domain concept), use PLAN mode f
 ## Repository Layout
 
 ```
-scripts/verify-ci.sh          — Root enforcement script. Run this. Always. (CLEAR-owned, auto-updated)
+scripts/verify-ci.sh          — Run this. Always. (CLEAR-owned, auto-updated)
 scripts/verify-local.sh       — Project-specific checks (yours to edit)
 scripts/setup-clear.sh        — One-time project setup
 clear/autonomy.yml            — Autonomy boundaries + sources of truth

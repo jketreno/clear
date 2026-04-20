@@ -14,6 +14,7 @@
 #   ./scripts/update-project.sh --dry-run
 #   ./scripts/update-project.sh --enable-extension lizard
 #   ./scripts/update-project.sh --setup-extensions
+#   ./scripts/update-project.sh --self-sync ./
 # =============================================================================
 
 set -euo pipefail
@@ -76,6 +77,7 @@ DRY_RUN=false
 TARGET_DIR=""
 ENABLE_EXTENSIONS=()
 SETUP_EXTENSIONS=false
+SELF_SYNC=false
 
 # ── Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -96,6 +98,10 @@ while [[ $# -gt 0 ]]; do
       SETUP_EXTENSIONS=true
       shift
       ;;
+    --self-sync)
+      SELF_SYNC=true
+      shift
+      ;;
     --help | -h)
       echo "Usage: $(basename "$0") [OPTIONS] [/path/to/your-project]"
       echo ""
@@ -107,6 +113,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --enable-extension <name>    Enable an extension (e.g., lizard, file-size)"
       echo "                               Can be specified multiple times"
       echo "  --setup-extensions           Run the interactive extension setup wizard"
+      echo "  --self-sync                  Allow updating this CLEAR seed repo from templates"
       echo "  --help                       Show this help"
       echo ""
       echo "What gets updated:"
@@ -122,6 +129,10 @@ while [[ $# -gt 0 ]]; do
       echo "  • clear/extensions.yml    — your project-specific extension settings"
       echo "  • scripts/verify-local.sh — your project-specific CI checks"
       echo "  • .gitignore              — your project-specific ignores"
+      echo ""
+      echo "Seed-repo mode:"
+      echo "  By default, the script refuses to target the CLEAR seed repo itself."
+      echo "  Use --self-sync to intentionally sync template-managed files into CLEAR."
       exit 0
       ;;
     -*)
@@ -152,9 +163,13 @@ TARGET_DIR="$(cd "$TARGET_DIR" 2>/dev/null && pwd)" || {
 
 # ── Guard: don't update the CLEAR repo itself
 if [[ "$TARGET_DIR" == "$CLEAR_ROOT" ]]; then
-  error "Target is the CLEAR seed repo itself."
-  echo "  Use 'git pull' inside $CLEAR_ROOT to update CLEAR."
-  exit 1
+  if [[ "$SELF_SYNC" == false ]]; then
+    error "Target is the CLEAR seed repo itself."
+    echo "  Use 'git pull' inside $CLEAR_ROOT to update CLEAR code."
+    echo "  Use --self-sync if you intentionally want to sync template-installed files into CLEAR."
+    exit 1
+  fi
+  warn "Self-sync mode enabled: syncing template-installed files into CLEAR seed repo."
 fi
 
 # ── Guard: must be a bootstrapped project
