@@ -258,6 +258,13 @@ if [[ -z "$NOTES_FILE" ]]; then
   rl_info "Generated release notes from template: $NOTES_TEMPLATE"
 fi
 
+if [[ "$DRY_RUN" == "true" ]]; then
+  rl_info "Release notes preview: $NOTES_FILE"
+  echo "----- BEGIN RELEASE NOTES -----"
+  cat "$NOTES_FILE"
+  echo "----- END RELEASE NOTES -----"
+fi
+
 rl_info "Creating and pushing git tag"
 rl_run "$DRY_RUN" git tag -a "v$VERSION" -m "CLEAR v$VERSION"
 rl_run "$DRY_RUN" git push origin "v$VERSION"
