@@ -6,6 +6,7 @@
 #   ./scripts/bootstrap-project.sh --dry-run /path/to/your-project
 #   ./scripts/bootstrap-project.sh --no-templates /path/to/your-project
 #   ./scripts/bootstrap-project.sh --no-setup /path/to/your-project
+#   ./scripts/bootstrap-project.sh --with-examples /path/to/your-project
 #   ./scripts/bootstrap-project.sh --enable-extension lizard /path/to/your-project
 #   ./scripts/bootstrap-project.sh --enable-extension file-size /path/to/your-project
 
@@ -15,12 +16,41 @@ set -euo pipefail
 CLEAR_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # ── Colours
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-RESET='\033[0m'
+supports_color() {
+  [[ -z "${NO_COLOR:-}" ]] || return 1
+  [[ "${TERM:-}" != "dumb" ]] || return 1
+
+  if [[ -n "${FORCE_COLOR:-}" || -n "${CLICOLOR_FORCE:-}" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    return 0
+  fi
+
+  [[ -t 1 ]] || return 1
+
+  if command -v tput >/dev/null 2>&1; then
+    local colors
+    colors="$(tput colors 2>/dev/null || printf '0')"
+    [[ "$colors" =~ ^[0-9]+$ ]] || return 1
+    ((colors >= 8)) || return 1
+  fi
+
+  return 0
+}
+
+if supports_color; then
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[1;33m'
+  CYAN='\033[0;36m'
+  BOLD='\033[1m'
+  RESET='\033[0m'
+else
+  RED=''
+  GREEN=''
+  YELLOW=''
+  CYAN=''
+  BOLD=''
+  RESET=''
+fi
 
 info() { echo -e "${CYAN}ℹ ${RESET}$*"; }
 success() { echo -e "${GREEN}✅ ${RESET}$*"; }
@@ -68,6 +98,7 @@ enable_extension() {
 # ── Defaults
 DRY_RUN=false
 INCLUDE_TEMPLATES=true
+INCLUDE_EXAMPLES=false
 RUN_SETUP=true
 TARGET_DIR=""
 ENABLE_EXTENSIONS=()
@@ -87,6 +118,10 @@ while [[ $# -gt 0 ]]; do
       RUN_SETUP=false
       shift
       ;;
+    --with-examples)
+      INCLUDE_EXAMPLES=true
+      shift
+      ;;
     --enable-extension)
       if [[ -z "${2:-}" ]]; then
         error "--enable-extension requires an extension name (e.g., lizard, file-size)"
@@ -102,6 +137,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --dry-run                    Show what would be copied without doing it"
       echo "  --no-templates               Skip copying the templates/ directory"
       echo "  --no-setup                   Skip running setup-clear.sh after copying"
+      echo "  --with-examples              Include example skill files (domain-specific illustrations)"
       echo "  --enable-extension <name>    Enable an extension (e.g., lizard, file-size)"
       echo "                               Can be specified multiple times"
       echo "  --help                       Show this help"
@@ -175,6 +211,7 @@ echo "  Source : $CLEAR_ROOT"
 echo "  Target : $TARGET_DIR"
 [[ "$DRY_RUN" == true ]] && warn "Dry-run mode — no files will be written."
 [[ "$INCLUDE_TEMPLATES" == false ]] && warn "Skipping templates/ directory."
+[[ "$INCLUDE_EXAMPLES" == true ]] && info "Including example skill files."
 echo ""
 
 # ── Track results
@@ -252,6 +289,18 @@ for item in "${COPY_IF_MISSING[@]}"; do
     COPIED+=("$dst_rel")
   fi
 done
+
+# ── Remove examples if --with-examples was not specified
+if [[ "$INCLUDE_TEMPLATES" == true && "$INCLUDE_EXAMPLES" == false ]]; then
+  if [[ -d "$TARGET_DIR/templates/examples" ]]; then
+    if [[ "$DRY_RUN" == false ]]; then
+      rm -rf "$TARGET_DIR/templates/examples"
+      info "Skipped examples (use --with-examples to include)"
+    else
+      info "Would skip examples (use --with-examples to include)"
+    fi
+  fi
+fi
 
 # ── Make scripts executable
 if [[ "$DRY_RUN" == false ]]; then

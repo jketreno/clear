@@ -177,7 +177,7 @@ When asked to sync types after a Python model change:
 
 ## Drift Detection
 
-The architecture test `templates/architecture-tests/type-compatibility.test.ts` catches drift.
+The architecture test `templates/examples/architecture-tests/type-compatibility.test.ts` catches drift.
 To run it standalone:
 
 ```bash

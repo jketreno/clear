@@ -130,7 +130,7 @@ describe('Python ↔ TypeScript Type Compatibility', () => {
       throw new Error(
         `The following Pydantic models have no TypeScript interface:\n` +
         missing.map((n) => `  • ${n}`).join('\n') +
-        `\n\nRun the type generation skill (templates/skills/type-sync.md) to add them.`
+        `\n\nRun the type generation skill (templates/examples/skills/type-sync.md) to add them.`
       );
     }
   });
@@ -173,7 +173,7 @@ describe('Python ↔ TypeScript Type Compatibility', () => {
       throw new Error(
         `Field drift detected between Pydantic and TypeScript:\n` +
         driftReport.join('\n') +
-        `\n\nRegenerate TypeScript types using templates/skills/type-sync.md`
+        `\n\nRegenerate TypeScript types using templates/examples/skills/type-sync.md`
       );
     }
   });

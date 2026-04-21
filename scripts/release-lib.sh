@@ -5,11 +5,39 @@
 
 set -euo pipefail
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-RESET='\033[0m'
+supports_color() {
+  [[ -z "${NO_COLOR:-}" ]] || return 1
+  [[ "${TERM:-}" != "dumb" ]] || return 1
+
+  if [[ -n "${FORCE_COLOR:-}" || -n "${CLICOLOR_FORCE:-}" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    return 0
+  fi
+
+  [[ -t 1 ]] || return 1
+
+  if command -v tput >/dev/null 2>&1; then
+    local colors
+    colors="$(tput colors 2>/dev/null || printf '0')"
+    [[ "$colors" =~ ^[0-9]+$ ]] || return 1
+    ((colors >= 8)) || return 1
+  fi
+
+  return 0
+}
+
+if supports_color; then
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[1;33m'
+  CYAN='\033[0;36m'
+  RESET='\033[0m'
+else
+  RED=''
+  GREEN=''
+  YELLOW=''
+  CYAN=''
+  RESET=''
+fi
 
 rl_info() { echo -e "${CYAN}INFO ${RESET}$*"; }
 rl_ok() { echo -e "${GREEN}OK   ${RESET}$*"; }

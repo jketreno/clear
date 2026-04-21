@@ -14,13 +14,18 @@ Your architecture rules live in code reviews and tribal knowledge. AI can't read
 
 CLEAR fixes this: define your rules as automated checks, tell the AI to run them before finishing, and let it self-correct. The AI generates code, runs `verify-ci.sh`, sees the failure, fixes it, and reports done — you never see the violation.
 
-**Get started in three commands:**
+<!-- RELEASE_VERSION_START -->
+**Install the latest release (v1.0.0):**
+
+[Download CLEAR v1.0.0](https://github.com/jketreno/clear/releases/tag/v1.0.0)
 
 ```bash
-git clone https://github.com/jketreno/clear && cd clear
-./scripts/bootstrap-project.sh /path/to/your-project
-./scripts/verify-ci.sh   # see it in action
+curl -fsSLO https://github.com/jketreno/clear/releases/download/v1.0.0/clear-installer-v1.0.0.sh
+bash clear-installer-v1.0.0.sh --target /path/to/your-project
 ```
+<!-- RELEASE_VERSION_END -->
+
+This copies CLEAR's scripts, configs, and docs into your project. Then configure `clear/autonomy.yml` to set AI generation boundaries. After that, your AI tool will start enforcing your rules with every code change.
 
 ---
 
@@ -82,9 +87,11 @@ cd clear
 # Apply (copies files + runs setup wizard):
 ./scripts/bootstrap-project.sh /path/to/your-project
 
+# Include domain-specific example skills (api-endpoint, type-sync, etc.):
+./scripts/bootstrap-project.sh --with-examples /path/to/your-project
+
 # Enable extensions during bootstrap:
 ./scripts/bootstrap-project.sh --enable-extension file-size /path/to/your-project
-./scripts/bootstrap-project.sh --enable-extension lizard --enable-extension file-size /path/to/your-project
 ```
 
 The bootstrap script copies all CLEAR files into your project, preserves existing files, makes scripts executable, and launches the setup wizard to configure `clear/autonomy.yml`.
@@ -222,8 +229,11 @@ templates/
     .vscode/            — VS Code tasks, settings, recommended extensions
     CLAUDE.md           — Claude Code root config (auto-read)
     .cursorrules        — Legacy Cursor fallback
-  architecture-tests/   — Copy-paste test templates (API rules, type sync, autonomy guard)
-  skills/               — AI skill files for type sync, API endpoints, reality tests
+  architecture-tests/   — Generic architecture test (autonomy guard)
+  skills/               — Generic AI skills (MCP server, code review)
+  examples/
+    architecture-tests/ — Domain-specific test examples (API rules, type sync, module boundaries)
+    skills/             — Domain-specific skill illustrations (copy and customize)
   linting/              — ESLint config templates (flat, legacy, React/TSX)
   git-hooks/            — Pre-commit hook that runs verify-ci.sh
   github-actions/       — CI/CD workflow template
@@ -237,93 +247,11 @@ docs/                   — Full documentation
 
 ---
 
-## Mermaid Asset Publishing (Markdown + LinkedIn)
-
-This repo includes a publish workflow that renders Mermaid diagrams into static
-assets for docs and social distribution.
-
-### Local render
-
-Prerequisite: Node.js with `npm`/`npx` available on PATH.
-
-```bash
-./scripts/render-mermaid-assets.sh
-```
-
-Outputs:
-
-- `assets/publish/readme.rendered.md` — README transformed so Mermaid code fences
-  are replaced with image references
-- `assets/publish/readme.rendered-*.svg` — generated SVG assets for markdown
-  diagrams
-- `assets/publish/linkedin/clear-overview-1200x627.png` — LinkedIn article cover
-  size (1.91:1)
-- `assets/publish/linkedin/clear-overview-1080x1080.png` — LinkedIn feed square
-- `assets/publish/linkedin/clear-overview.svg` — Beautiful source SVG for social
-  reuse
-
-### CI publish workflow
-
-GitHub Actions workflow:
-
-- `.github/workflows/publish-mermaid-assets.yml`
-
-It runs on manual dispatch and on pushes that modify Mermaid sources, then
-uploads generated SVG/PNG files as artifacts.
-
-Mermaid source/config files:
-
-- `assets/diagrams/clear-overview.mmd`
-
----
-
-## Release Flow (Signed Installer)
-
-Build and publish a release from a clean `main` branch:
-
-```bash
-./scripts/release.sh --yes
-```
-
-The release publishes three artifacts:
-
-- `clear-installer-vX.Y.Z.sh`
-- `clear-installer-vX.Y.Z.sha256`
-- `clear-installer-vX.Y.Z.sha256.asc`
-
-Public verification key in-repo:
-
-- `docs/keys/clear-release-signing-public.asc`
-
-Signing key fingerprint:
-
-- `35CD F523 D2E6 E479 53FC A25F A404 671B FB78 0D6E`
-
-Before running the installer, verify signature and checksum:
-
-```bash
-gpg --verify clear-installer-vX.Y.Z.sha256.asc clear-installer-vX.Y.Z.sha256
-sha256sum -c clear-installer-vX.Y.Z.sha256
-```
-
-Installer entrypoint supports install/update and extract mode:
-
-```bash
-# Install or update in one command
-bash clear-installer-vX.Y.Z.sh --target /path/to/repo
-
-# Extract payload for inspection without install/update
-bash clear-installer-vX.Y.Z.sh --extract /tmp/clear-extract
-```
-
-Default installer behavior leaves no extraction artifacts outside the target repository.
-
----
-
 ## Learn More
 
 | Topic | Document |
 |-------|---------|
+| Origin & philosophy | [ORIGIN.md](ORIGIN.md) |
 | Full setup walkthrough | [docs/getting-started.md](docs/getting-started.md) |
 | Enforcement with tests | [docs/principles/constrained.md](docs/principles/constrained.md) |
 | Autonomy boundaries | [docs/principles/limited.md](docs/principles/limited.md) |
@@ -334,7 +262,3 @@ Default installer behavior leaves no extraction artifacts outside the target rep
 | Claude Code setup | [docs/ai-tools/claude.md](docs/ai-tools/claude.md) |
 | Cursor setup | [docs/ai-tools/cursor.md](docs/ai-tools/cursor.md) |
 | Agentic workflows & MCP | [docs/agentic.md](docs/agentic.md) |
-| Release runbook | [docs/release.md](docs/release.md) |
-| Release verification | [docs/security-release-verification.md](docs/security-release-verification.md) |
-| Release notes template | [docs/release-notes-template.md](docs/release-notes-template.md) |
-| Origin & philosophy | [ORIGIN.md](ORIGIN.md) |

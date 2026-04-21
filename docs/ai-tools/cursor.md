@@ -85,7 +85,7 @@ globs: ["backend/models/**", "frontend/src/types/**"]
 # Type Sync Skill
 
 When modifying Python Pydantic models in backend/models/:
-[content of templates/skills/type-sync.md]
+[content of templates/examples/skills/type-sync.md]
 ```
 
 ### Domain-specific rule (for a specific module)

@@ -71,3 +71,10 @@ When asked to implement something complex, present this before writing code:
 
 Proceed with implementation? [yes/no]
 ```
+
+## Release Tasks
+
+When a user asks to cut or publish a release:
+1. Use the repo-local release skill in `.github/skills/release.md`.
+2. After release publication, update only the README block between `<!-- RELEASE_VERSION_START -->` and `<!-- RELEASE_VERSION_END -->`.
+3. Ensure that tagged block contains the new tag link and exact installer filename (`clear-installer-vX.Y.Z.sh`).

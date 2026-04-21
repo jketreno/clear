@@ -3,7 +3,7 @@
 # CLEAR update-project.sh — Bring a bootstrapped project to the latest CLEAR
 # =============================================================================
 # Updates agent configs, CLEAR scripts (including verify-ci.sh), and
-# previously-installed skills.
+# installed skills.
 #
 # verify-ci.sh is CLEAR-owned and always updated safely — your project-specific
 # checks live in scripts/verify-local.sh, which is never overwritten.
@@ -22,12 +22,41 @@ set -euo pipefail
 CLEAR_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # ── Colours
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-RESET='\033[0m'
+supports_color() {
+  [[ -z "${NO_COLOR:-}" ]] || return 1
+  [[ "${TERM:-}" != "dumb" ]] || return 1
+
+  if [[ -n "${FORCE_COLOR:-}" || -n "${CLICOLOR_FORCE:-}" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    return 0
+  fi
+
+  [[ -t 1 ]] || return 1
+
+  if command -v tput >/dev/null 2>&1; then
+    local colors
+    colors="$(tput colors 2>/dev/null || printf '0')"
+    [[ "$colors" =~ ^[0-9]+$ ]] || return 1
+    ((colors >= 8)) || return 1
+  fi
+
+  return 0
+}
+
+if supports_color; then
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[1;33m'
+  CYAN='\033[0;36m'
+  BOLD='\033[1m'
+  RESET='\033[0m'
+else
+  RED=''
+  GREEN=''
+  YELLOW=''
+  CYAN=''
+  BOLD=''
+  RESET=''
+fi
 
 info() { echo -e "${CYAN}ℹ  ${RESET}$*"; }
 success() { echo -e "${GREEN}✅ ${RESET}$*"; }
@@ -122,7 +151,7 @@ while [[ $# -gt 0 ]]; do
       echo "  • CLEAR scripts    scripts/verify-ci.sh, setup-clear.sh,"
       echo "                     bootstrap-project.sh, update-project.sh (self)"
       echo "  • Installed skills .github/prompts/<name>.prompt.md for each skill"
-      echo "                     that was previously installed from CLEAR"
+      echo "                     installed from CLEAR (generic or example)"
       echo ""
       echo "What is never touched:"
       echo "  • clear/autonomy.yml      — your project-specific configuration"
@@ -310,16 +339,22 @@ else
   CURRENT+=("clear/extensions.yml")
 fi
 
-# ── 5. Skills — update only previously-installed ones
+# ── 5. Skills — update installed ones
 #    A skill is "installed" if .github/prompts/<name>.prompt.md exists
-#    AND templates/skills/<name>.md exists in CLEAR.
+#    AND templates/skills/<name>.md OR templates/examples/skills/<name>.md
+#    exists in CLEAR.
 header "Skills..."
 SKILLS_FOUND=0
 if [[ -d "$TARGET_DIR/.github/prompts" ]]; then
   while IFS= read -r prompt_file; do
     skill_name="$(basename "$prompt_file" .prompt.md)"
-    src_skill="$CLEAR_ROOT/templates/skills/${skill_name}.md"
-    if [[ -f "$src_skill" ]]; then
+    src_skill=""
+    if [[ -f "$CLEAR_ROOT/templates/skills/${skill_name}.md" ]]; then
+      src_skill="$CLEAR_ROOT/templates/skills/${skill_name}.md"
+    elif [[ -f "$CLEAR_ROOT/templates/examples/skills/${skill_name}.md" ]]; then
+      src_skill="$CLEAR_ROOT/templates/examples/skills/${skill_name}.md"
+    fi
+    if [[ -n "$src_skill" ]]; then
       ((SKILLS_FOUND++)) || true
       update_file "$src_skill" "$prompt_file" ".github/prompts/${skill_name}.prompt.md"
     fi

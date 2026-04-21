@@ -23,11 +23,39 @@ else
   PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 fi
 
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+supports_color() {
+  [[ -z "${NO_COLOR:-}" ]] || return 1
+  [[ "${TERM:-}" != "dumb" ]] || return 1
+
+  if [[ -n "${FORCE_COLOR:-}" || -n "${CLICOLOR_FORCE:-}" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    return 0
+  fi
+
+  [[ -t 1 ]] || return 1
+
+  if command -v tput >/dev/null 2>&1; then
+    local colors
+    colors="$(tput colors 2>/dev/null || printf '0')"
+    [[ "$colors" =~ ^[0-9]+$ ]] || return 1
+    ((colors >= 8)) || return 1
+  fi
+
+  return 0
+}
+
+if supports_color; then
+  GREEN='\033[0;32m'
+  YELLOW='\033[1;33m'
+  BLUE='\033[0;34m'
+  CYAN='\033[0;36m'
+  NC='\033[0m'
+else
+  GREEN=''
+  YELLOW=''
+  BLUE=''
+  CYAN=''
+  NC=''
+fi
 
 info() { echo -e "${BLUE}ℹ  $1${NC}"; }
 success() { echo -e "${GREEN}✅ $1${NC}"; }
@@ -246,7 +274,7 @@ echo ""
 info "Add custom checks to scripts/verify-local.sh (never overwritten by CLEAR):"
 echo "  • Your linter (ESLint, Ruff, etc.)"
 echo "  • Your test runner (Jest, pytest, go test)"
-echo "  • Architecture tests (see templates/architecture-tests/)"
+echo "  • Architecture tests (see templates/architecture-tests/ and templates/examples/architecture-tests/)"
 echo "  • Code generation checks (proto, OpenAPI, etc.)"
 echo ""
 info "See verify-local.sh for examples using run_check"
@@ -274,9 +302,67 @@ echo "See docs/ai-tools/ for detailed setup guides."
 header "CLEAR Setup — Step 6: Install Skills [optional]"
 
 SKILLS_DIR="$CLEAR_ROOT/templates/skills"
+EXAMPLES_DIR="$CLEAR_ROOT/templates/examples/skills"
 PROMPTS_DIR="$PROJECT_ROOT/.github/prompts"
 INSTALLED_SKILLS=""
 
+# Helper: present a list of skills and install selected ones
+# Usage: install_skills_menu <label> <file_array_name> <name_array_name> <desc_array_name>
+install_skills_from_arrays() {
+  local label="$1"
+  shift
+  local -n _files=$1 _names=$2 _descs=$3
+
+  if [[ ${#_files[@]} -eq 0 ]]; then
+    return
+  fi
+
+  echo "$label (installed to .github/prompts/ for VS Code Copilot):"
+  echo ""
+  for _i in "${!_files[@]}"; do
+    printf "  %d. %s\n" "$((_i + 1))" "${_names[$_i]}"
+    printf "     %s\n" "${_descs[$_i]}"
+    echo ""
+  done
+
+  printf "${CYAN}  Enter numbers to install (space-separated), 'all', or press ENTER to skip: ${NC}" >/dev/tty
+  read -r _SELECTION </dev/tty
+  echo ""
+
+  if [[ -n "$_SELECTION" ]]; then
+    local _TO_INSTALL=()
+    if [[ "$_SELECTION" == "all" ]]; then
+      for _i in "${!_files[@]}"; do
+        _TO_INSTALL+=("$_i")
+      done
+    else
+      for _token in $_SELECTION; do
+        if [[ "$_token" =~ ^[0-9]+$ ]]; then
+          local _idx=$((_token - 1))
+          if [[ $_idx -ge 0 && $_idx -lt ${#_files[@]} ]]; then
+            _TO_INSTALL+=("$_idx")
+          else
+            warn "No skill at position $_token — skipped"
+          fi
+        fi
+      done
+    fi
+
+    if [[ ${#_TO_INSTALL[@]} -gt 0 ]]; then
+      mkdir -p "$PROMPTS_DIR"
+      for _idx in "${_TO_INSTALL[@]}"; do
+        local _name="${_names[$_idx]}"
+        cp "${_files[$_idx]}" "$PROMPTS_DIR/${_name}.prompt.md"
+        success "Installed: .github/prompts/${_name}.prompt.md"
+        INSTALLED_SKILLS="$INSTALLED_SKILLS $_name"
+      done
+    fi
+  else
+    info "Skipped"
+  fi
+}
+
+# ── Generic skills (project-agnostic, work without customization)
 SKILL_FILES=()
 SKILL_NAMES=()
 SKILL_DESCS=()
@@ -288,51 +374,32 @@ for _sf in "$SKILLS_DIR"/*.md; do
 done
 
 if [[ ${#SKILL_FILES[@]} -gt 0 ]]; then
-  echo "Available skills (installed to .github/prompts/ for VS Code Copilot):"
-  echo ""
-  for _i in "${!SKILL_FILES[@]}"; do
-    printf "  %d. %s\n" "$((_i + 1))" "${SKILL_NAMES[$_i]}"
-    printf "     %s\n" "${SKILL_DESCS[$_i]}"
-    echo ""
-  done
-
-  printf "${CYAN}  Enter numbers to install (space-separated), 'all', or press ENTER to skip: ${NC}" >/dev/tty
-  read -r SKILL_SELECTION </dev/tty
-  echo ""
-
-  if [[ -n "$SKILL_SELECTION" ]]; then
-    TO_INSTALL=()
-    if [[ "$SKILL_SELECTION" == "all" ]]; then
-      for _i in "${!SKILL_FILES[@]}"; do
-        TO_INSTALL+=("$_i")
-      done
-    else
-      for _token in $SKILL_SELECTION; do
-        if [[ "$_token" =~ ^[0-9]+$ ]]; then
-          _idx=$((_token - 1))
-          if [[ $_idx -ge 0 && $_idx -lt ${#SKILL_FILES[@]} ]]; then
-            TO_INSTALL+=("$_idx")
-          else
-            warn "No skill at position $_token — skipped"
-          fi
-        fi
-      done
-    fi
-
-    if [[ ${#TO_INSTALL[@]} -gt 0 ]]; then
-      mkdir -p "$PROMPTS_DIR"
-      for _idx in "${TO_INSTALL[@]}"; do
-        _name="${SKILL_NAMES[$_idx]}"
-        cp "${SKILL_FILES[$_idx]}" "$PROMPTS_DIR/${_name}.prompt.md"
-        success "Installed: .github/prompts/${_name}.prompt.md"
-        INSTALLED_SKILLS="$INSTALLED_SKILLS $_name"
-      done
-    fi
-  else
-    info "Skipped — copy templates/skills/*.md to .github/prompts/ later"
-  fi
+  install_skills_from_arrays "Generic skills" SKILL_FILES SKILL_NAMES SKILL_DESCS
 else
-  info "No skills found in $SKILLS_DIR"
+  info "No generic skills found in $SKILLS_DIR"
+fi
+
+# ── Example skills (domain-specific, need customization)
+EX_FILES=()
+EX_NAMES=()
+EX_DESCS=()
+if [[ -d "$EXAMPLES_DIR" ]]; then
+  for _sf in "$EXAMPLES_DIR"/*.md; do
+    [[ -f "$_sf" ]] || continue
+    _bn="$(basename "$_sf")"
+    [[ "$_bn" == "README.md" ]] && continue
+    EX_FILES+=("$_sf")
+    EX_NAMES+=("$(get_skill_meta "$_sf" "name")")
+    EX_DESCS+=("$(get_skill_meta "$_sf" "description")")
+  done
+fi
+
+if [[ ${#EX_FILES[@]} -gt 0 ]]; then
+  echo ""
+  echo "Example skills are domain-specific illustrations that need customization."
+  echo "Look for UPDATE: comments in each file after installing."
+  echo ""
+  install_skills_from_arrays "Example skills" EX_FILES EX_NAMES EX_DESCS
 fi
 
 # ─── Step 7: Extensions ──────────────────────────────────────────────────────
@@ -459,7 +526,7 @@ echo "   [YOUR MOST COMMON REVIEW COMMENT]'"
 echo "  'Add it to scripts/verify-local.sh'"
 echo ""
 echo "See docs/getting-started.md for the full step-by-step guide."
-echo "See templates/architecture-tests/ for examples."
+echo "See templates/architecture-tests/ and templates/examples/architecture-tests/ for examples."
 
 # ─── Summary ─────────────────────────────────────────────────────────────────
 

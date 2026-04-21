@@ -36,7 +36,7 @@ applyTo: "src/api/**"
 ---
 # API Development Rules
 All endpoints must include rate limiting, authentication, and input validation.
-Follow templates/skills/api-endpoint.md for the complete template.
+Follow templates/examples/skills/api-endpoint.md for the complete template.
 ```
 
 ### Enable Instruction Files
@@ -135,7 +135,7 @@ Copy the content from `templates/skills/` and add the `applyTo` frontmatter:
 ---
 applyTo: "backend/models/api/**"
 ---
-# [Contents of templates/skills/type-sync.md]
+# [Contents of templates/examples/skills/type-sync.md]
 ```
 
 ---

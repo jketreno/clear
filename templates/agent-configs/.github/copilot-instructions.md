@@ -119,7 +119,8 @@ scripts/verify-local.sh       — Project-specific checks (yours to edit)
 scripts/setup-clear.sh        — One-time project setup
 clear/autonomy.yml            — Autonomy boundaries + sources of truth
 clear/principles.md           — This framework's quick reference
-templates/architecture-tests/ — Copy and adapt these
-templates/skills/             — Reusable AI skill files
+templates/architecture-tests/ — Generic architecture tests (autonomy guard)
+templates/skills/             — Generic AI skills (MCP server, code review)
+templates/examples/           — Domain-specific examples (architecture tests, skills)
 docs/                         — Full documentation
 ```

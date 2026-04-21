@@ -196,7 +196,7 @@ Pick ONE of these — the one that matches your biggest current pain point:
 1. Pick one external dependency (database, OAuth/IAM provider, external API)
 2. Ask your AI:
    ```
-   Write a reality test using templates/skills/reality-test.md
+   Write a reality test using templates/examples/skills/reality-test.md
    that verifies our [concept] model matches [external system].
    ```
 3. Run it against your staging environment
@@ -205,11 +205,11 @@ Pick ONE of these — the one that matches your biggest current pain point:
 
 ## Step 6: Add Architecture Tests
 
-Copy a template from `templates/architecture-tests/` into `tests/architecture/`:
+Copy a template from `templates/architecture-tests/` (generic) or `templates/examples/architecture-tests/` (domain-specific) into `tests/architecture/`:
 
 ```bash
-cp templates/architecture-tests/api-rules.test.js tests/architecture/
 cp templates/architecture-tests/autonomy-guard.test.js tests/architecture/
+cp templates/examples/architecture-tests/api-rules.test.js tests/architecture/
 ```
 
 Edit the copied files to match your project structure (the `// UPDATE:` comments show you where).

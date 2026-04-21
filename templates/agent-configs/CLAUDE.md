@@ -145,8 +145,10 @@ Wait for approval before writing code.
 | `scripts/verify-ci.sh` | Root CI enforcement script — run before completing work (CLEAR-owned) |
 | `scripts/verify-local.sh` | Project-specific checks — add your checks here |
 | `scripts/setup-clear.sh` | One-time setup wizard |
-| `templates/architecture-tests/` | Architecture test examples |
-| `templates/skills/` | Reusable regeneration skill files |
+| `templates/architecture-tests/` | Generic architecture tests (autonomy guard) |
+| `templates/examples/architecture-tests/` | Domain-specific test examples |
+| `templates/skills/` | Generic AI skills (MCP server, code review) |
+| `templates/examples/skills/` | Domain-specific skill illustrations (copy and customize) |
 | `docs/` | Full documentation |
 | `docs/agentic.md` | Multi-agent pipelines + MCP integration guide |
 | `templates/skills/mcp-server.md` | Skill to scaffold a CLEAR MCP server |

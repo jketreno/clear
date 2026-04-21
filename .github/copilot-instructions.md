@@ -111,6 +111,15 @@ For complex changes (new feature, refactor, new domain concept), use PLAN mode f
  Only proceed after I approve the plan."
 ```
 
+## Release Skill (Copilot / VS Code)
+
+When asked to cut or publish a release, use the repo-local release skill in `.github/skills/release.md` and the repository prompt in `.github/prompts/release.prompt.md`.
+
+After each successful release publication, update README's "CLEAR in 60 Seconds" section to:
+- replace only content between `<!-- RELEASE_VERSION_START -->` and `<!-- RELEASE_VERSION_END -->`
+- set the version label and release link to the new tag `vX.Y.Z`
+- include minimal installer commands using exact installer filename for that version
+
 ## Repository Layout
 
 ```
@@ -119,7 +128,8 @@ scripts/verify-local.sh       — Project-specific checks (yours to edit)
 scripts/setup-clear.sh        — One-time project setup
 clear/autonomy.yml            — Autonomy boundaries + sources of truth
 clear/principles.md           — This framework's quick reference
-templates/architecture-tests/ — Copy and adapt these
-templates/skills/             — Reusable AI skill files
+templates/architecture-tests/ — Generic architecture tests (autonomy guard)
+templates/skills/             — Generic AI skills (MCP server, code review)
+templates/examples/           — Domain-specific examples (architecture tests, skills)
 docs/                         — Full documentation
 ```

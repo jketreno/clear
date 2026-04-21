@@ -34,7 +34,7 @@ Claude Code also reads `CLAUDE.md` from subdirectories when you're working in th
 # API Module Instructions
 
 All endpoints in this directory are in the `supervised` autonomy zone.
-Always follow templates/skills/api-endpoint.md when creating new endpoints.
+Always follow templates/examples/skills/api-endpoint.md when creating new endpoints.
 Every endpoint must pass the architecture test in tests/architecture/api-rules.test.js.
 ```
 
@@ -152,13 +152,13 @@ For project-wide skills, add a reference in your `CLAUDE.md`:
 ## Skills
 
 When generating TypeScript types from Python models, follow:
-`templates/skills/type-sync.md`
+`templates/examples/skills/type-sync.md`
 
 When the user says "update the protos", follow:
-`templates/skills/proto-visualization.md`
+`templates/examples/skills/proto-visualization.md`
 
 When creating a new API endpoint, follow:
-`templates/skills/api-endpoint.md`
+`templates/examples/skills/api-endpoint.md`
 ```
 
 Claude will read the skill file when it's relevant.
@@ -171,7 +171,7 @@ For skills that are invoked explicitly, create a `.claude/commands/` file:
 <!-- .claude/commands/sync-types.md -->
 # /project:sync-types
 
-When invoked, follow templates/skills/type-sync.md exactly to regenerate
+When invoked, follow templates/examples/skills/type-sync.md exactly to regenerate
 TypeScript types from the Python Pydantic models in backend/models/api/.
 
 After regenerating, run ./scripts/verify-ci.sh to verify the type

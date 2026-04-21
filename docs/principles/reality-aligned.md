@@ -87,7 +87,7 @@ Reality tests verify that your local implementation actually matches the externa
 - Guard with `if (NODE_ENV !== 'staging') throw` to prevent production data access
 - Compare normalized representations (timestamps, sorted arrays, etc.)
 
-See `templates/skills/reality-test.md` for complete examples for OAuth/IAM and database schemas.
+See `templates/examples/skills/reality-test.md` for complete examples for OAuth/IAM and database schemas.
 
 **Where to put them:**
 ```

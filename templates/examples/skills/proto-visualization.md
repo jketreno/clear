@@ -219,7 +219,7 @@ Update `src/components/proto/index.ts` to export the new component.
 
 ## Architecture Test
 
-`templates/architecture-tests/api-rules.test.js` (adapted for proto):
+`templates/examples/architecture-tests/api-rules.test.js` (adapted for proto):
 
 ```js
 test('all proto messages have corresponding React components', () => {

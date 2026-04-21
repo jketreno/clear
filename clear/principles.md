@@ -102,8 +102,10 @@ See [docs/agentic.md](../docs/agentic.md) for full patterns and the `templates/s
 | `scripts/verify-ci.sh` | Local CI/CD enforcement — CLEAR-owned, auto-updated |
 | `scripts/verify-local.sh` | Project-specific checks — yours to edit |
 | `scripts/setup-clear.sh` | Interactive setup wizard for new projects |
-| `templates/architecture-tests/` | Example architecture tests to adapt |
-| `templates/skills/` | Reusable AI skill files for common patterns |
+| `templates/architecture-tests/` | Generic architecture tests (autonomy guard) |
+| `templates/examples/architecture-tests/` | Domain-specific test examples (API rules, type sync, module boundaries) |
+| `templates/skills/` | Generic AI skills (MCP server, code review) |
+| `templates/examples/skills/` | Domain-specific skill illustrations (copy and customize) |
 | `templates/github-actions/` | CI/CD workflow templates |
 | `templates/linting/` | ESLint config templates |
 | `docs/` | Detailed documentation per principle and AI tool |

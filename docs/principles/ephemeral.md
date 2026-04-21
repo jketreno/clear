@@ -68,7 +68,7 @@ The key artifact is a **skill file** — a document that tells your AI exactly h
 - ...
 ```
 
-See `templates/skills/` for complete examples:
+See `templates/examples/skills/` for complete examples:
 - `type-sync.md` — Python Pydantic → TypeScript interfaces + Zod schemas
 - `proto-visualization.md` — Protobuf → React components
 - `api-endpoint.md` — Feature request → endpoint with tests and docs
@@ -108,7 +108,7 @@ globs: ["backend/models/**"]
 Source: backend/models/api/user.py (Python Pydantic model)
 Output: frontend/src/types/api/user.ts (TypeScript interface)
         frontend/src/types/schemas/user.ts (Zod schema)
-Skill:  templates/skills/type-sync.md
+Skill:  templates/examples/skills/type-sync.md
 ```
 
 **Trigger:** Python model changes  
@@ -121,7 +121,7 @@ Skill:  templates/skills/type-sync.md
 Source: proto/services/*.proto (protobuf definitions)
 Output: src/components/proto/**/*.tsx (React components)
         src/types/proto/*.ts (TypeScript types)
-Skill:  templates/skills/proto-visualization.md
+Skill:  templates/examples/skills/proto-visualization.md
 ```
 
 **Trigger:** Proto files change  

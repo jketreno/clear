@@ -25,11 +25,13 @@ A file is generated if:
 
 ## Regeneration Skills
 
-Check `templates/skills/` for documented regeneration workflows:
+Check `templates/examples/skills/` for documented example regeneration workflows:
 - `type-sync.md` — Keep Python ↔ TypeScript types in sync
 - `proto-visualization.md` — Update UI components from protobuf changes
 - `api-endpoint.md` — Generate an endpoint with rate limiting and tests
 - `reality-test.md` — Generate reality tests against an external service
+
+New skills belong in `templates/skills/`.
 
 ## When Asked to Modify a Generated File
 

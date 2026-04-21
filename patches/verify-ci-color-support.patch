@@ -1,0 +1,49 @@
+diff --git a/scripts/verify-ci.sh b/scripts/verify-ci.sh
+--- a/scripts/verify-ci.sh
++++ b/scripts/verify-ci.sh
+@@ -38,11 +38,37 @@ for arg in "$@"; do
+ done
+ 
+ # ─── Helpers ──────────────────────────────────────────────────────────────────
+ 
+-GREEN='\033[0;32m'
+-RED='\033[0;31m'
+-YELLOW='\033[1;33m'
+-BLUE='\033[0;34m'
+-NC='\033[0m' # No Color
++supports_color() {
++  [[ -z "${NO_COLOR:-}" ]] || return 1
++  [[ "${TERM:-}" != "dumb" ]] || return 1
++
++  if [[ -n "${FORCE_COLOR:-}" || -n "${CLICOLOR_FORCE:-}" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
++    return 0
++  fi
++
++  [[ -t 1 ]] || return 1
++
++  if command -v tput >/dev/null 2>&1; then
++    local colors
++    colors="$(tput colors 2>/dev/null || printf '0')"
++    [[ "$colors" =~ ^[0-9]+$ ]] || return 1
++    (( colors >= 8 )) || return 1
++  fi
++
++  return 0
++}
++
++if supports_color; then
++  GREEN='\033[0;32m'
++  RED='\033[0;31m'
++  YELLOW='\033[1;33m'
++  BLUE='\033[0;34m'
++  NC='\033[0m' # No Color
++else
++  GREEN=''
++  RED=''
++  YELLOW=''
++  BLUE=''
++  NC=''
++fi
+ 
+ pass() { echo -e "${GREEN}✅ $1${NC}"; }
+ fail() { echo -e "${RED}❌ $1${NC}"; FAILED_CHECKS+=("$1"); }

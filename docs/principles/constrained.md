@@ -126,7 +126,7 @@ test('utility code does not import from business logic', () => {
 });
 ```
 
-See `templates/architecture-tests/` for complete, copy-paste examples.
+See `templates/architecture-tests/` for generic tests and `templates/examples/architecture-tests/` for domain-specific examples.
 
 ---
 
@@ -168,7 +168,7 @@ The powerful move: **use AI to write the constraints**. Then you review and appr
  3. Authentication required
  
  Then add it to scripts/verify-local.sh.
- Use templates/architecture-tests/api-rules.test.js as a starting point."
+ Use templates/examples/architecture-tests/api-rules.test.js as a starting point."
 ```
 
 AI generates the constraint. You review it (10 minutes). Now the constraint enforces itself on all future AI-generated code.
