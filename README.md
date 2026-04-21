@@ -23,7 +23,8 @@ Works with GitHub Copilot, Claude Code, Cursor, and MCP-compatible agent framewo
 
 ```bash
 curl -fsSLO https://github.com/jketreno/clear/releases/download/v1.0.0/clear-installer-v1.0.0.sh
-bash clear-installer-v1.0.0.sh --target /path/to/your-project
+chmod +x ./clear-installer-v1.0.0.sh
+./clear-installer-v1.0.0.sh --target /path/to/your-project
 ```
 <!-- RELEASE_VERSION_END -->
 
