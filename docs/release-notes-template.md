@@ -12,6 +12,8 @@ Public key file: {{KEY_PATH}}
 Fingerprint: {{FINGERPRINT}}
 
 ```bash
+{{DOWNLOAD_SECTION}}
+
 {{SIGNATURE_SECTION}}
 ```
 

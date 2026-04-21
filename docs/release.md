@@ -62,6 +62,21 @@ Release notes should repeat the same fingerprint to support out-of-band trust ve
 
 ## Installer Usage
 
+Download artifacts and verification key first:
+
+```bash
+curl -fsSLO https://github.com/jketreno/clear/releases/download/vX.Y.Z/clear-installer-vX.Y.Z.sh
+curl -fsSLO https://github.com/jketreno/clear/releases/download/vX.Y.Z/clear-installer-vX.Y.Z.sha256
+curl -fsSLO https://github.com/jketreno/clear/releases/download/vX.Y.Z/clear-installer-vX.Y.Z.sha256.asc
+curl -fsSL -o clear-release-signing-public.asc \
+	https://raw.githubusercontent.com/jketreno/clear/vX.Y.Z/docs/keys/clear-release-signing-public.asc
+gpg --import clear-release-signing-public.asc
+gpg --verify clear-installer-vX.Y.Z.sha256.asc clear-installer-vX.Y.Z.sha256
+sha256sum -c clear-installer-vX.Y.Z.sha256
+```
+
+Do not run the installer unless verification succeeds.
+
 Install or update from one entrypoint:
 
 ```bash

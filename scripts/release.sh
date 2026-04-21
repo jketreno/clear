@@ -44,6 +44,9 @@ generate_release_notes() {
   local fingerprint_file="$5"
   local include_signature="$6"
 
+  local release_base="https://github.com/jketreno/clear/releases/download/v${version}"
+  local key_url="https://raw.githubusercontent.com/jketreno/clear/v${version}/${key_path}"
+
   local fingerprint="(unavailable)"
   if [[ -f "$fingerprint_file" ]]; then
     fingerprint="$(tr -s ' ' <"$fingerprint_file" | sed 's/^ //; s/ $//')"
@@ -51,21 +54,25 @@ generate_release_notes() {
 
   local signature_section
   if [[ "$include_signature" == "true" ]]; then
-    signature_section="gpg --verify clear-installer-v${version}.sha256.asc clear-installer-v${version}.sha256 && sha256sum -c clear-installer-v${version}.sha256"
+    signature_section="gpg --verify clear-installer-v${version}.sha256.asc clear-installer-v${version}.sha256\nsha256sum -c clear-installer-v${version}.sha256"
   else
     signature_section="This release was generated in break-glass mode without detached signature artifacts (--no-sign)."
   fi
+
+  local download_section="curl -fsSLO ${release_base}/clear-installer-v${version}.sh\ncurl -fsSLO ${release_base}/clear-installer-v${version}.sha256\ncurl -fsSLO ${release_base}/clear-installer-v${version}.sha256.asc\ncurl -fsSL -o clear-release-signing-public.asc ${key_url}\ngpg --import clear-release-signing-public.asc"
 
   if [[ -f "$template_file" ]]; then
     awk \
       -v version="$version" \
       -v key_path="$key_path" \
       -v fingerprint="$fingerprint" \
+      -v download_section="$download_section" \
       -v signature_section="$signature_section" \
       '{
         gsub(/\{\{VERSION\}\}/, version)
         gsub(/\{\{KEY_PATH\}\}/, key_path)
         gsub(/\{\{FINGERPRINT\}\}/, fingerprint)
+        gsub(/\{\{DOWNLOAD_SECTION\}\}/, download_section)
         gsub(/\{\{SIGNATURE_SECTION\}\}/, signature_section)
         print
       }' "$template_file" >"$output_file"
@@ -84,7 +91,15 @@ generate_release_notes() {
 Public key file: ${key_path}
 Fingerprint: ${fingerprint}
 
+curl -fsSLO ${release_base}/clear-installer-v${version}.sh
+curl -fsSLO ${release_base}/clear-installer-v${version}.sha256
+curl -fsSLO ${release_base}/clear-installer-v${version}.sha256.asc
+curl -fsSL -o clear-release-signing-public.asc ${key_url}
+gpg --import clear-release-signing-public.asc
+
 ${signature_section}
+
+Do not run the installer unless verification succeeds.
 EOF
   fi
 }
