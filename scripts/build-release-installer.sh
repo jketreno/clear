@@ -250,7 +250,7 @@ fi
 
 if [[ -f "$TARGET_DIR/clear/autonomy.yml" ]]; then
   info "Detected existing CLEAR project. Running update workflow."
-  UPDATE_CMD=("$PAYLOAD_ROOT/scripts/update-project.sh")
+  UPDATE_CMD=("$PAYLOAD_ROOT/scripts/bootstrap-project.sh" "--update")
   if [[ "$DRY_RUN" == "true" ]]; then
     UPDATE_CMD+=("--dry-run")
   fi

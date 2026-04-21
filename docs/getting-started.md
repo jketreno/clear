@@ -24,7 +24,7 @@ Look at the top-level structure:
 
 ```
 scripts/          — verify-ci.sh (enforcement), setup-clear.sh (wizard),
-                    bootstrap-project.sh (bootstrap), update-project.sh (sync updates)
+                    bootstrap-project.sh (bootstrap + update)
 clear/            — autonomy.yml (boundaries), principles.md (reference)
 templates/        — copy-paste starting points for architecture tests and skills
 docs/             — this documentation
@@ -47,13 +47,22 @@ If you are adopting CLEAR into an **existing** project (most common), run the bo
 
 This copies all CLEAR files into your project and then launches the setup wizard automatically. Existing files in your project are never overwritten — directories are merged and individual files are skipped if they already exist.
 
+If the target already has CLEAR installed, run bootstrap in update mode:
+
+```bash
+./scripts/bootstrap-project.sh --update /path/to/your-project
+```
+
 **Options:**
 
 | Flag | Description |
 |------|-------------|
 | `--dry-run` | Show what would be copied without writing anything |
+| `--update` | Update an already-bootstrapped project |
 | `--no-templates` | Skip copying the `templates/` directory |
 | `--no-setup` | Copy files only; skip running `setup-clear.sh` |
+| `--setup-extensions` | Interactive extension setup (use with `--update`) |
+| `--self-sync` | Allow self-sync when targeting the CLEAR seed repo (use with `--update`) |
 
 ```bash
 # Preview what will happen first:
@@ -64,15 +73,15 @@ This copies all CLEAR files into your project and then launches the setup wizard
 ```
 
 The setup wizard will:
-1. Ask which modules are full-autonomy / supervised / humans-only
-2. Ask you to declare sources of truth for key domain concepts
-3. Create a configured `clear/autonomy.yml`
+1. Offer to use the `autonomy-bootstrap` skill to generate project-specific boundaries and sources of truth
+2. Create or keep a starter `clear/autonomy.yml`
+3. Fall back to manual prompts for boundaries/concepts if you choose not to use the skill flow
 
-**Keeping your project up to date:** As the CLEAR seed evolves, run `update-project.sh` from the seed repo to sync improvements back into your project:
+**Keeping your project up to date:** As the CLEAR seed evolves, run bootstrap in update mode to sync improvements back into your project:
 
 ```bash
 # From the clear/ seed repository root:
-./scripts/update-project.sh /path/to/your-project
+./scripts/bootstrap-project.sh --update /path/to/your-project
 ```
 
 ---

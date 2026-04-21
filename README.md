@@ -6,18 +6,20 @@
 
 > **C**onstrained · **L**imited · **E**phemeral · **A**ssertive · **R**eality-Aligned
 
-CLEAR keeps your architecture rules **enforced, not suggested** when working with AI coding tools — from single-session assistants to multi-agent pipelines. One script. Five principles. Works with GitHub Copilot, Claude Code, Cursor, and MCP-compatible agent frameworks.
-
-### CLEAR in 60 Seconds
-
 Your architecture rules live in code reviews and tribal knowledge. AI can't read any of that — so it generates code that works but violates your patterns.
 
 CLEAR fixes this: define your rules as automated checks, tell the AI to run them before finishing, and let it self-correct. The AI generates code, runs `verify-ci.sh`, sees the failure, fixes it, and reports done — you never see the violation.
 
-<!-- RELEASE_VERSION_START -->
-**Install the latest release (v1.0.0):**
+Works with GitHub Copilot, Claude Code, Cursor, and MCP-compatible agent frameworks.
 
-[Download CLEAR v1.0.0](https://github.com/jketreno/clear/releases/tag/v1.0.0)
+---
+
+## Quick Start
+
+### 1 — Install CLEAR into your project
+
+<!-- RELEASE_VERSION_START -->
+**Latest release: [v1.0.0](https://github.com/jketreno/clear/releases/tag/v1.0.0)**
 
 ```bash
 curl -fsSLO https://github.com/jketreno/clear/releases/download/v1.0.0/clear-installer-v1.0.0.sh
@@ -25,7 +27,54 @@ bash clear-installer-v1.0.0.sh --target /path/to/your-project
 ```
 <!-- RELEASE_VERSION_END -->
 
-This copies CLEAR's scripts, configs, and docs into your project. Then configure `clear/autonomy.yml` to set AI generation boundaries. After that, your AI tool will start enforcing your rules with every code change.
+This copies CLEAR's scripts, AI tool configs, and templates into your project. If CLEAR is already installed, the installer updates CLEAR-owned files and preserves your customizations.
+
+### 2 — Run the setup wizard
+
+```bash
+cd /path/to/your-project
+./scripts/setup-clear.sh
+```
+
+The wizard now defaults to a hybrid flow: it can install a safe starter `clear/autonomy.yml`
+and guide you to run the `autonomy-bootstrap` skill from your AI assistant
+(Cursor, Copilot Chat, Claude, etc.) to generate project-specific boundaries and sources of truth.
+Manual prompts for boundaries/concepts are still available as a fallback.
+
+### 3 — See it work
+
+```bash
+./scripts/verify-ci.sh
+```
+
+You should see all checks pass. This is the script your AI tool runs before reporting any work as complete. Right now it checks autonomy boundaries and shell compliance. Your project-specific checks come next.
+
+### 4 — Add your first constraint
+
+Open your AI tool (Copilot, Claude Code, Cursor) in your project. It automatically reads the CLEAR config files installed in step 1. Paste this:
+
+```
+Analyze this codebase and identify the build tools, linters, test frameworks,
+and any existing architecture tests. For each tool found, show me the exact
+run_check() line to add to scripts/verify-local.sh. Wait for my approval.
+```
+
+Review what the AI proposes, approve it, then run `./scripts/verify-ci.sh` again — your checks are now enforced.
+
+### 5 — Turn a code review comment into an enforced rule
+
+Think of your most repeated code review comment. Tell your AI tool:
+
+```
+I want to turn this code review rule into an enforced constraint:
+"[paste your most common review comment here]"
+
+What type of check best enforces this — linter rule, architecture test, or build flag?
+Show me the code for the check and the run_check() line for verify-local.sh.
+Wait for my approval.
+```
+
+From now on, AI self-corrects against that rule before saying "done." You review constraints, not implementations.
 
 ---
 
@@ -55,6 +104,10 @@ flowchart TD
     VCI -->|"all checks pass"| DONE["✅ Done — AI reports complete<br/>Developer commits"]
 ```
 
+The core rule every AI config enforces:
+
+> **Run `./scripts/verify-ci.sh` before reporting work as complete. If it fails, fix the issues and run again. Never say "done" if it fails.**
+
 ---
 
 ## The Five Principles
@@ -69,181 +122,73 @@ flowchart TD
 
 ---
 
-## Quick Start
+## What Gets Installed
 
-### 1 — Clone the seed repo
+The installer copies these into your project:
+
+```
+scripts/
+  verify-ci.sh       — The enforcement script (CLEAR-owned, updated automatically)
+  verify-local.sh    — Your project-specific checks (never overwritten)
+  setup-clear.sh     — Interactive setup wizard
+
+clear/
+  autonomy.yml       — Module boundaries (full-autonomy / supervised / humans-only)
+  extensions.yml     — Optional tool extensions (e.g., Lizard complexity analysis)
+  principles.md      — AI quick-reference card (read at session start)
+
+CLAUDE.md            — Claude Code config (auto-read at session start)
+.github/             — GitHub Copilot instruction files
+.cursor/rules/       — Cursor MDC rule files
+.claude/commands/    — Claude slash commands (/project:verify, check-autonomy, update-autonomy)
+.vscode/             — VS Code tasks, settings, recommended extensions
+
+templates/
+  architecture-tests/ — Autonomy guard test (copy into your test suite)
+  skills/             — AI skills (autonomy bootstrap, MCP server scaffolding, code review)
+  linting/            — ESLint config templates (flat, legacy, React/TSX)
+  git-hooks/          — Pre-commit hook that runs verify-ci.sh
+  github-actions/     — CI/CD workflow template
+```
+
+Domain-specific examples (API endpoint skills, type-sync tests, etc.) are available separately:
 
 ```bash
-git clone https://github.com/jketreno/clear
-cd clear
-```
-
-### 2 — Bootstrap CLEAR into your project
-
-```bash
-# Preview what will be copied:
-./scripts/bootstrap-project.sh --dry-run /path/to/your-project
-
-# Apply (copies files + runs setup wizard):
-./scripts/bootstrap-project.sh /path/to/your-project
-
-# Include domain-specific example skills (api-endpoint, type-sync, etc.):
-./scripts/bootstrap-project.sh --with-examples /path/to/your-project
-
-# Enable extensions during bootstrap:
-./scripts/bootstrap-project.sh --enable-extension file-size /path/to/your-project
-```
-
-The bootstrap script copies all CLEAR files into your project, preserves existing files, makes scripts executable, and launches the setup wizard to configure `clear/autonomy.yml`.
-
-**Then let AI suggest your initial autonomy boundaries** (use PLAN mode — don't implement yet):
-
-```
-PLAN MODE — do not write any files yet.
-
-Analyze this codebase and propose an initial clear/autonomy.yml configuration.
-For each significant module or directory, recommend one of:
-  - full-autonomy  (safe to AI-generate freely: utilities, client wrappers, generated types)
-  - supervised     (AI generates, human reviews: business logic, DB migrations, API handlers)
-  - humans-only    (no AI generation: auth, payments, security-critical code, core domain models)
-
-For each recommendation, explain why. Also identify 2–3 domain concepts that need
-a declared source of truth (e.g. "User is defined in the DB schema, not the API layer").
-
-Show me the proposed autonomy.yml content. Wait for my approval before writing anything.
-```
-
-Review the plan, adjust any boundaries, then tell the AI to write `clear/autonomy.yml`.
-
-### 3 — Add your project's checks
-
-`verify-ci.sh` auto-detects your stack (Node, Python, Go, Rust) and is CLEAR-owned — updated when you pull new CLEAR versions. Your project-specific checks go in `scripts/verify-local.sh`, which is never overwritten.
-
-**Let AI propose your checks:**
-
-```
-PLAN MODE — do not write any files yet.
-
-Analyze this codebase and identify:
-1. Build tools in use (tsc, webpack, cargo, go build, etc.)
-2. Linters and formatters configured (ESLint, Prettier, Ruff, Black, golangci-lint, etc.)
-3. Test frameworks and how to run them (jest, pytest, go test, etc.)
-4. Any existing architecture or integration tests
-
-For each tool found, show me the exact run_check() line to add to scripts/verify-local.sh,
-placed in the correct section (Build / Linting / Tests / Architecture Tests).
-
-If a tool is configured but has no runnable command yet, note it as a recommendation.
-Show me the full proposed additions. Wait for my approval before editing the script.
-```
-
-Once you approve, tell the AI: `"Apply the plan — update scripts/verify-local.sh now."`
-
-Or if you prefer to edit manually, here are examples:
-
-```bash
-# Node.js
-run_check "TypeScript build" "cd '$PROJECT_ROOT' && npm run build 2>&1"
-run_check "ESLint"           "cd '$PROJECT_ROOT' && npx eslint . 2>&1"
-run_check "Jest"             "cd '$PROJECT_ROOT' && npm test 2>&1"
-
-# Python
-run_check "Ruff"   "cd '$PROJECT_ROOT' && ruff check . 2>&1"
-run_check "Mypy"   "cd '$PROJECT_ROOT' && mypy . 2>&1"
-run_check "pytest" "cd '$PROJECT_ROOT' && pytest --tb=short -q 2>&1"
-```
-
-**Validate the script works before relying on it:**
-
-```
-Run scripts/verify-ci.sh and show me the full output.
-For any check that fails, tell me whether it's a real issue in the codebase
-or a configuration problem with the check itself.
-Do not fix anything yet — just report.
-```
-
-### 4 — Turn your first code review rule into a constraint
-
-Before wiring up your AI tool, pick one recurring code review comment and make it automatic:
-
-```
-I want to turn this code review rule into an enforced constraint:
-"[paste your most common review comment here]"
-
-In PLAN mode:
-1. What type of check best enforces this — linter rule, architecture test, or build flag?
-2. Show me the exact code for the check.
-3. Show me the run_check() line to add to scripts/verify-local.sh.
-4. Write one failing test that proves the rule is enforced.
-
-Wait for my approval before writing any files.
-```
-
-### 5 — Tell your AI to run it
-
-The config files already contain this rule, but confirm your AI tool loads them:
-
-| Tool | Config auto-read |
-|------|-----------------|
-| GitHub Copilot | `.github/copilot-instructions.md` |
-| Claude Code | `CLAUDE.md` |
-| Cursor | `.cursor/rules/*.mdc` |
-
-The core rule every AI config enforces:
-
-> **Run `./scripts/verify-ci.sh` before reporting work as complete. If it fails, fix the issues and run again. Never say "done" if it fails.**
-
-**Verify your AI is actually following the rule:**
-
-```
-Without making any code changes, run scripts/verify-ci.sh and show me the complete output.
-Then tell me: which checks are currently enabled in this project, and which sections
-are empty placeholders waiting to be configured?
+# Re-run the installer to add examples:
+bash clear-installer-v1.0.0.sh --target /path/to/your-project
+# Examples are in templates/examples/ if installed with --with-examples during bootstrap
 ```
 
 ---
 
-## What's Included
+## Updating CLEAR
 
+When a new version is released, run the installer again against the same project:
+
+```bash
+curl -fsSLO https://github.com/jketreno/clear/releases/download/vX.Y.Z/clear-installer-vX.Y.Z.sh
+bash clear-installer-vX.Y.Z.sh --target /path/to/your-project
 ```
-scripts/
-  verify-ci.sh          — The enforcement script. Run this. Always. (CLEAR-owned)
-  verify-local.sh       — Project-specific checks (yours to edit, never overwritten)
-  setup-clear.sh        — Interactive setup wizard
-  bootstrap-project.sh  — Copy CLEAR into an existing project
-  update-project.sh     — Sync a bootstrapped project with the latest CLEAR seed
-  release.sh            — Create tagged GitHub release with installer artifacts
-  build-release-installer.sh — Build self-extracting installer + checksums + signatures
-  verify-release-artifacts.sh — Verify detached signature and checksum integrity
 
-clear/
-  autonomy.yml          — Module boundaries (full-autonomy / supervised / humans-only)
-  extensions.yml        — Optional tool extensions (e.g., Lizard complexity analysis)
-  principles.md         — AI quick-reference card (read at session start)
+CLEAR-owned files (`verify-ci.sh`, AI configs, `principles.md`) are updated. Your files (`verify-local.sh`, `autonomy.yml`, `extensions.yml`) are never overwritten.
 
-templates/
-  agent-configs/        — AI tool configs copied into user projects by bootstrap
-    .github/            — GitHub Copilot instruction files
-    .cursor/rules/      — Cursor MDC rule files (6, all annotated)
-    .claude/commands/   — Claude slash commands (/project:verify, check-autonomy, update-autonomy)
-    .vscode/            — VS Code tasks, settings, recommended extensions
-    CLAUDE.md           — Claude Code root config (auto-read)
-    .cursorrules        — Legacy Cursor fallback
-  architecture-tests/   — Generic architecture test (autonomy guard)
-  skills/               — Generic AI skills (MCP server, code review)
-  examples/
-    architecture-tests/ — Domain-specific test examples (API rules, type sync, module boundaries)
-    skills/             — Domain-specific skill illustrations (copy and customize)
-  linting/              — ESLint config templates (flat, legacy, React/TSX)
-  git-hooks/            — Pre-commit hook that runs verify-ci.sh
-  github-actions/       — CI/CD workflow template
+---
 
-.github/                — Copilot configs for developing the CLEAR seed repo itself
-.cursor/rules/          — Cursor configs for developing the CLEAR seed repo itself
-.claude/commands/       — Claude configs for developing the CLEAR seed repo itself
-CLAUDE.md               — Claude root config for the CLEAR seed repo itself
-docs/                   — Full documentation
+## Alternative: Bootstrap from Source
+
+If you prefer to work from the git repo (for contributing or customizing CLEAR itself):
+
+```bash
+git clone https://github.com/jketreno/clear
+cd clear
+./scripts/bootstrap-project.sh /path/to/your-project          # install + setup wizard
+./scripts/bootstrap-project.sh --with-examples /path/to/project  # include domain-specific examples
+./scripts/bootstrap-project.sh --dry-run /path/to/project        # preview only
+./scripts/bootstrap-project.sh --update /path/to/project         # update an existing CLEAR install
 ```
+
+If the target project is already bootstrapped, `bootstrap-project.sh` now asks you to use
+`--update` instead of running bootstrap mode again.
 
 ---
 
@@ -262,3 +207,4 @@ docs/                   — Full documentation
 | Claude Code setup | [docs/ai-tools/claude.md](docs/ai-tools/claude.md) |
 | Cursor setup | [docs/ai-tools/cursor.md](docs/ai-tools/cursor.md) |
 | Agentic workflows & MCP | [docs/agentic.md](docs/agentic.md) |
+| Contributing | [DEVELOPERS.md](DEVELOPERS.md) |

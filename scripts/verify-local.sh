@@ -21,6 +21,7 @@ collect_shell_files() {
   if command -v git >/dev/null 2>&1 && git -C "$PROJECT_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
     while IFS= read -r rel_path; do
       [[ -z "$rel_path" ]] && continue
+      [[ -f "$PROJECT_ROOT/$rel_path" ]] || continue
       out_ref+=("$rel_path")
     done < <(cd "$PROJECT_ROOT" && git ls-files '*.sh')
     return 0

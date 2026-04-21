@@ -15,7 +15,7 @@
 #
 # Customization:
 #   Add project-specific checks to scripts/verify-local.sh (not this file).
-#   This file is CLEAR-owned and updated by update-project.sh.
+#   This file is CLEAR-owned and updated by bootstrap-project.sh --update.
 #   verify-local.sh is YOUR file — it is never overwritten.
 #
 # AI Instructions: Run this script after generating or modifying any code.

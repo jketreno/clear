@@ -1,4 +1,10 @@
-# Skill: CLEAR MCP Server
+---
+name: mcp-server
+description: "Scaffolds a minimal MCP server that exposes CLEAR enforcement tools so agents can run verify checks and autonomy lookups through typed calls."
+mode: agent
+---
+
+# CLEAR MCP Server
 
 > **What this skill does:** Scaffolds a minimal MCP (Model Context Protocol) server that
 > exposes CLEAR's enforcement primitives — `verify-ci.sh` and `autonomy.yml` — as typed

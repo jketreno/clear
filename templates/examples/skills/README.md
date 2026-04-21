@@ -20,7 +20,7 @@ A skill file tells your AI tool exactly how to perform a repeatable task. Struct
 3. **Step-by-step process** — what to generate and how
 4. **Verification** — how to confirm correctness (usually `verify-ci.sh`)
 
-See the generic skills in `templates/skills/` (`mcp-server.md`, `review.md`) for project-agnostic skills that work without customization.
+See the generic skills in `templates/skills/` (`autonomy-bootstrap.md`, `mcp-server.md`, `review.md`) for project-agnostic skills that work without customization.
 
 ## Installing examples into your project
 

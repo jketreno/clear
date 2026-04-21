@@ -133,6 +133,8 @@ PROJECT_NAME=$(ask "Project name" "$(basename "$PROJECT_ROOT")")
 echo ""
 info "Setting up CLEAR for: $PROJECT_NAME"
 
+USE_AUTONOMY_SKILL=false
+
 # ─── Step 2: Autonomy boundaries ──────────────────────────────────────────────
 
 header "CLEAR Setup — Step 2: Autonomy Boundaries [L]"
@@ -162,17 +164,60 @@ add_autonomy_entry() {
   return 0
 }
 
-echo "Enter your autonomy boundaries below (one per prompt)."
-echo "Press ENTER on a blank path to skip — you can edit clear/autonomy.yml later."
-echo ""
+if ask_yn "Use autonomy-bootstrap skill to generate clear/autonomy.yml after setup?" "y"; then
+  USE_AUTONOMY_SKILL=true
+  mkdir -p "$PROJECT_ROOT/clear"
+  if [[ -f "$PROJECT_ROOT/clear/autonomy.yml" ]]; then
+    info "Keeping existing clear/autonomy.yml (will refine it with autonomy-bootstrap)."
+  else
+    cat >"$PROJECT_ROOT/clear/autonomy.yml" <<AUTONOMY_EOF
+# =============================================================================
+# CLEAR autonomy.yml — Module Autonomy Boundaries
+# =============================================================================
+# CLEAR Principle: [L] Limited — Define where AI works alone vs with humans
+#
+# Levels:
+#   full-autonomy  — AI can read, modify, and regenerate freely
+#   supervised     — AI generates code, but human must review before commit
+#   humans-only    — AI must NOT generate code; flag for human attention
+#
+# AI Instructions: Before modifying any file, check this list. If the file
+# falls under a 'humans-only' path, stop and alert the user. If 'supervised',
+# generate but add a review reminder. If 'full-autonomy', proceed normally.
+# =============================================================================
 
-while true; do
-  add_autonomy_entry || break
-done
+project: "${PROJECT_NAME}"
 
-# Write autonomy.yml
-mkdir -p "$PROJECT_ROOT/clear"
-cat >"$PROJECT_ROOT/clear/autonomy.yml" <<AUTONOMY_EOF
+modules:
+
+  # ── Default for uncategorized paths ──────────────────────────────────────
+  - path: "*"
+    level: supervised
+    reason: "Default: untagged modules require human review"
+
+# =============================================================================
+# Reality Alignment — Sources of Truth
+# =============================================================================
+# Add project-specific concepts after bootstrap or generate them via the
+# autonomy-bootstrap skill.
+
+sources_of_truth:
+AUTONOMY_EOF
+    success "Created starter clear/autonomy.yml"
+  fi
+  info "Manual autonomy prompts skipped. Setup will install and guide autonomy-bootstrap usage."
+else
+  echo "Enter your autonomy boundaries below (one per prompt)."
+  echo "Press ENTER on a blank path to skip — you can edit clear/autonomy.yml later."
+  echo ""
+
+  while true; do
+    add_autonomy_entry || break
+  done
+
+  # Write autonomy.yml
+  mkdir -p "$PROJECT_ROOT/clear"
+  cat >"$PROJECT_ROOT/clear/autonomy.yml" <<AUTONOMY_EOF
 # =============================================================================
 # CLEAR autonomy.yml — Module Autonomy Boundaries
 # =============================================================================
@@ -198,46 +243,53 @@ modules:${AUTONOMY_ENTRIES}
     reason: "Default: untagged modules require human review"
 AUTONOMY_EOF
 
-success "Created clear/autonomy.yml"
+  success "Created clear/autonomy.yml"
+fi
 
 # ─── Step 3: Source of truth ──────────────────────────────────────────────────
 
 header "CLEAR Setup — Step 3: Reality Alignment [R]"
 
-echo "The Reality-Aligned principle requires declaring a single source of"
-echo "truth for each key domain concept. When systems disagree, what wins?"
-echo ""
+if [[ "$USE_AUTONOMY_SKILL" == true ]]; then
+  echo "The autonomy-bootstrap skill will gather project concepts and draft"
+  echo "sources_of_truth entries with your team context."
+  echo ""
+  info "Skipping manual sources-of-truth prompts in setup wizard."
+else
+  echo "The Reality-Aligned principle requires declaring a single source of"
+  echo "truth for each key domain concept. When systems disagree, what wins?"
+  echo ""
 
-SOURCES_OF_TRUTH=""
+  SOURCES_OF_TRUTH=""
 
-declare -a CONCEPTS=()
-declare -a SOURCES=()
-declare -a SYSTEMS=()
+  declare -a CONCEPTS=()
+  declare -a SOURCES=()
+  declare -a SYSTEMS=()
 
-add_source_of_truth() {
-  local concept source system
-  printf "${CYAN}  Domain concept (e.g., User, Order, Subscription) — leave blank to finish: ${NC}" >/dev/tty
-  read -r concept </dev/tty
-  [[ -z "$concept" ]] && return 1 # blank = done
-  source=$(ask "  Source of truth (e.g., database schema, OAuth/IAM provider, protobuf)" "")
-  system=$(ask "  System/file that defines it (e.g., idp.users, schema.prisma)" "")
-  SOURCES_OF_TRUTH="${SOURCES_OF_TRUTH}
+  add_source_of_truth() {
+    local concept source system
+    printf "${CYAN}  Domain concept (e.g., User, Order, Subscription) — leave blank to finish: ${NC}" >/dev/tty
+    read -r concept </dev/tty
+    [[ -z "$concept" ]] && return 1 # blank = done
+    source=$(ask "  Source of truth (e.g., database schema, OAuth/IAM provider, protobuf)" "")
+    system=$(ask "  System/file that defines it (e.g., idp.users, schema.prisma)" "")
+    SOURCES_OF_TRUTH="${SOURCES_OF_TRUTH}
   - concept: \"${concept}\"
     source_of_truth: \"${source}\"
     defined_in: \"${system}\""
-  return 0
-}
+    return 0
+  }
 
-echo "Declare sources of truth for key domain concepts."
-echo "Press ENTER on a blank concept to skip — you can edit clear/autonomy.yml later."
-echo ""
+  echo "Declare sources of truth for key domain concepts."
+  echo "Press ENTER on a blank concept to skip — you can edit clear/autonomy.yml later."
+  echo ""
 
-while true; do
-  add_source_of_truth || break
-done
+  while true; do
+    add_source_of_truth || break
+  done
 
-# Append sources of truth to autonomy.yml (always; empty block is harmless)
-cat >>"$PROJECT_ROOT/clear/autonomy.yml" <<REALITY_EOF
+  # Append sources of truth to autonomy.yml (always; empty block is harmless)
+  cat >>"$PROJECT_ROOT/clear/autonomy.yml" <<REALITY_EOF
 
 # =============================================================================
 # Reality Alignment — Sources of Truth
@@ -249,8 +301,9 @@ cat >>"$PROJECT_ROOT/clear/autonomy.yml" <<REALITY_EOF
 sources_of_truth:${SOURCES_OF_TRUTH}
 REALITY_EOF
 
-if [[ -n "$SOURCES_OF_TRUTH" ]]; then
-  success "Added sources of truth to clear/autonomy.yml"
+  if [[ -n "$SOURCES_OF_TRUTH" ]]; then
+    success "Added sources of truth to clear/autonomy.yml"
+  fi
 fi
 
 # ─── Step 4: verify-ci.sh ─────────────────────────────────────────────────────
@@ -317,7 +370,7 @@ install_skills_from_arrays() {
     return
   fi
 
-  echo "$label (installed to .github/prompts/ for VS Code Copilot):"
+  echo "$label (installed to .github/prompts/ for AI assistants: Cursor, Copilot Chat, Claude, etc.):"
   echo ""
   for _i in "${!_files[@]}"; do
     printf "  %d. %s\n" "$((_i + 1))" "${_names[$_i]}"
@@ -377,6 +430,27 @@ if [[ ${#SKILL_FILES[@]} -gt 0 ]]; then
   install_skills_from_arrays "Generic skills" SKILL_FILES SKILL_NAMES SKILL_DESCS
 else
   info "No generic skills found in $SKILLS_DIR"
+fi
+
+if [[ "$USE_AUTONOMY_SKILL" == true ]]; then
+  if [[ ! -f "$PROMPTS_DIR/autonomy-bootstrap.prompt.md" ]]; then
+    if [[ -f "$SKILLS_DIR/autonomy-bootstrap.md" ]]; then
+      mkdir -p "$PROMPTS_DIR"
+      cp "$SKILLS_DIR/autonomy-bootstrap.md" "$PROMPTS_DIR/autonomy-bootstrap.prompt.md"
+      success "Installed: .github/prompts/autonomy-bootstrap.prompt.md"
+      if [[ " $INSTALLED_SKILLS " != *" autonomy-bootstrap "* ]]; then
+        INSTALLED_SKILLS="$INSTALLED_SKILLS autonomy-bootstrap"
+      fi
+    else
+      warn "autonomy-bootstrap skill template not found: $SKILLS_DIR/autonomy-bootstrap.md"
+    fi
+  fi
+
+  echo ""
+  info "Next: open your AI assistant (Cursor, Copilot Chat, Claude, etc.)"
+  info "and run /autonomy-bootstrap to generate project-specific autonomy rules."
+  info "If slash commands are unavailable, open .github/prompts/autonomy-bootstrap.prompt.md"
+  info "and paste it into chat."
 fi
 
 # ── Example skills (domain-specific, need customization)
@@ -543,9 +617,13 @@ if [[ -n "$INSTALLED_SKILLS" ]]; then
 fi
 echo ""
 echo "Next steps:"
-echo "  1. Review clear/autonomy.yml and adjust boundaries for your codebase"
-echo "  2. Open scripts/verify-local.sh and add your project-specific checks"
-echo "  3. Run ./scripts/verify-ci.sh to see which checks pass/fail today"
-echo "  4. Read docs/getting-started.md for the full workflow"
+echo "  1. Open your AI assistant (Cursor, Copilot Chat, Claude, etc.)"
+echo "     and run the installed skill (for example: /autonomy-bootstrap)."
+echo "     If slash commands are unavailable, open .github/prompts/*.prompt.md"
+echo "     and paste the instructions into chat."
+echo "  2. Review clear/autonomy.yml and adjust boundaries for your codebase"
+echo "  3. Open scripts/verify-local.sh and add your project-specific checks"
+echo "  4. Run ./scripts/verify-ci.sh to see which checks pass/fail today"
+echo "  5. Read docs/getting-started.md for the full workflow"
 echo ""
 success "CLEAR is configured for: $PROJECT_NAME"
