@@ -64,3 +64,4 @@ yarn-error.log*
 # Lock files (commit these in apps, not libraries — customize as needed)
 # package-lock.json
 # yarn.lock
+.envrc
