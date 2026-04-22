@@ -61,7 +61,7 @@ If the target already has CLEAR installed, run bootstrap in update mode:
 | `--update` | Update an already-bootstrapped project |
 | `--no-templates` | Skip copying the `templates/` directory |
 | `--no-setup` | Copy files only; skip running `setup-clear.sh` |
-| `--with-examples` | Include domain-specific example skills/templates during bootstrap |
+| `--install-examples <path>` | Extract domain-specific examples to `<path>` and exit |
 | `--enable-extension <name>` | Enable one or more extensions (repeatable) |
 | `--setup-extensions` | Interactive extension setup (use with `--update`) |
 | `--self-sync` | Allow self-sync when targeting the CLEAR seed repo (use with `--update`) |

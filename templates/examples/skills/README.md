@@ -24,9 +24,9 @@ See the generic skills in `templates/skills/` (`autonomy-bootstrap.md`, `mcp-ser
 
 ## Installing examples into your project
 
-During bootstrap:
+Extract examples on demand:
 ```bash
-./scripts/bootstrap-project.sh --with-examples /path/to/your-project
+./scripts/bootstrap-project.sh --install-examples /path/to/examples
 ```
 
 Or copy individually:

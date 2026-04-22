@@ -400,7 +400,7 @@ echo ""
 info "Add custom checks to scripts/verify-local.sh (never overwritten by CLEAR):"
 echo "  • Your linter (ESLint, Ruff, etc.)"
 echo "  • Your test runner (Jest, pytest, go test)"
-echo "  • Architecture tests (see templates/architecture-tests/ and templates/examples/architecture-tests/)"
+echo "  • Architecture tests (see templates/architecture-tests/)"
 echo "  • Code generation checks (proto, OpenAPI, etc.)"
 echo ""
 info "See verify-local.sh for examples using run_check"
@@ -428,7 +428,6 @@ echo "See docs/ai-tools/ for detailed setup guides."
 header "CLEAR Setup — Step 6: Install Skills [optional]"
 
 SKILLS_DIR="$CLEAR_ROOT/templates/skills"
-EXAMPLES_DIR="$CLEAR_ROOT/templates/examples/skills"
 PROMPTS_DIR="$PROJECT_ROOT/.github/prompts"
 INSTALLED_SKILLS=""
 
@@ -527,29 +526,6 @@ if [[ "$USE_AUTONOMY_SKILL" == true ]]; then
   info "and reason for each entry, ending with a wildcard default. Also add 3-8"
   info "sources_of_truth entries (concept, source_of_truth, defined_in, note)."
   info "Then validate the YAML and show the proposed file content."
-fi
-
-# ── Example skills (domain-specific, need customization)
-EX_FILES=()
-EX_NAMES=()
-EX_DESCS=()
-if [[ -d "$EXAMPLES_DIR" ]]; then
-  for _sf in "$EXAMPLES_DIR"/*.md; do
-    [[ -f "$_sf" ]] || continue
-    _bn="$(basename "$_sf")"
-    [[ "$_bn" == "README.md" ]] && continue
-    EX_FILES+=("$_sf")
-    EX_NAMES+=("$(get_skill_meta "$_sf" "name")")
-    EX_DESCS+=("$(get_skill_meta "$_sf" "description")")
-  done
-fi
-
-if [[ ${#EX_FILES[@]} -gt 0 ]]; then
-  echo ""
-  echo "Example skills are domain-specific illustrations that need customization."
-  echo "Look for UPDATE: comments in each file after installing."
-  echo ""
-  install_skills_from_arrays "Example skills" EX_FILES EX_NAMES EX_DESCS
 fi
 
 # ─── Step 7: Extensions ──────────────────────────────────────────────────────
@@ -688,7 +664,8 @@ echo "   [YOUR MOST COMMON REVIEW COMMENT]'"
 echo "  'Add it to scripts/verify-local.sh'"
 echo ""
 echo "See docs/getting-started.md for the full step-by-step guide."
-echo "See templates/architecture-tests/ and templates/examples/architecture-tests/ for examples."
+echo "See templates/architecture-tests/ for generic examples."
+echo "Use ./scripts/bootstrap-project.sh --install-examples <path> for domain-specific examples."
 
 # ─── Summary ─────────────────────────────────────────────────────────────────
 

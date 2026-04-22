@@ -7,7 +7,7 @@
 #   ./scripts/bootstrap-project.sh --update /path/to/your-project
 #   ./scripts/bootstrap-project.sh --no-templates /path/to/your-project
 #   ./scripts/bootstrap-project.sh --no-setup /path/to/your-project
-#   ./scripts/bootstrap-project.sh --with-examples /path/to/your-project
+#   ./scripts/bootstrap-project.sh --install-examples /path/to/examples-output
 #   ./scripts/bootstrap-project.sh --enable-extension lizard /path/to/your-project
 #   ./scripts/bootstrap-project.sh --enable-extension file-size /path/to/your-project
 
@@ -100,12 +100,12 @@ enable_extension() {
 DRY_RUN=false
 UPDATE_MODE=false
 INCLUDE_TEMPLATES=true
-INCLUDE_EXAMPLES=false
 RUN_SETUP=true
 SETUP_EXTENSIONS=false
 SELF_SYNC=false
 TARGET_DIR=""
 ENABLE_EXTENSIONS=()
+INSTALL_EXAMPLES_PATH=""
 
 # ── Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -126,9 +126,13 @@ while [[ $# -gt 0 ]]; do
       RUN_SETUP=false
       shift
       ;;
-    --with-examples)
-      INCLUDE_EXAMPLES=true
-      shift
+    --install-examples)
+      if [[ -z "${2:-}" ]]; then
+        error "--install-examples requires an output path"
+        exit 1
+      fi
+      INSTALL_EXAMPLES_PATH="$2"
+      shift 2
       ;;
     --enable-extension)
       if [[ -z "${2:-}" ]]; then
@@ -154,7 +158,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --update                     Update an already-bootstrapped project"
       echo "  --no-templates               Skip copying the templates/ directory"
       echo "  --no-setup                   Skip running setup-clear.sh after copying"
-      echo "  --with-examples              Include example skill files (domain-specific illustrations)"
+      echo "  --install-examples <path>    Extract domain-specific examples to <path> and exit"
       echo "  --enable-extension <name>    Enable an extension (e.g., lizard, file-size)"
       echo "                               Can be specified multiple times"
       echo "  --setup-extensions           Interactive extension setup (update mode)"
@@ -176,6 +180,42 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ -n "$INSTALL_EXAMPLES_PATH" ]]; then
+  if [[ -n "$TARGET_DIR" ]]; then
+    error "--install-examples mode does not accept a bootstrap target directory argument."
+    exit 1
+  fi
+
+  if [[ "$UPDATE_MODE" == true || "$RUN_SETUP" == false || "$INCLUDE_TEMPLATES" == false || ${#ENABLE_EXTENSIONS[@]} -gt 0 || "$SETUP_EXTENSIONS" == true || "$SELF_SYNC" == true ]]; then
+    error "--install-examples cannot be combined with bootstrap/update workflow flags."
+    exit 1
+  fi
+
+  EXAMPLES_SOURCE="$CLEAR_ROOT/templates/examples"
+  [[ -d "$EXAMPLES_SOURCE" ]] || {
+    error "Examples source not found: $EXAMPLES_SOURCE"
+    exit 1
+  }
+
+  EXAMPLES_OUTPUT_DIR="$INSTALL_EXAMPLES_PATH"
+  if [[ "$DRY_RUN" == false ]]; then
+    EXAMPLES_OUTPUT_DIR="$(mkdir -p "$EXAMPLES_OUTPUT_DIR" && cd "$EXAMPLES_OUTPUT_DIR" && pwd)"
+  fi
+
+  header "Install Examples"
+  echo "  Source : $EXAMPLES_SOURCE"
+  echo "  Output : $EXAMPLES_OUTPUT_DIR"
+
+  if [[ "$DRY_RUN" == true ]]; then
+    info "Dry run: would copy templates/examples/* to $EXAMPLES_OUTPUT_DIR"
+    exit 0
+  fi
+
+  cp -r "$EXAMPLES_SOURCE/." "$EXAMPLES_OUTPUT_DIR/"
+  success "Installed examples into: $EXAMPLES_OUTPUT_DIR"
+  exit 0
+fi
 
 # ── Require a target directory
 if [[ -z "$TARGET_DIR" ]]; then
@@ -222,8 +262,8 @@ if [[ "$UPDATE_MODE" == true && "$IS_BOOTSTRAPPED" == false ]]; then
 fi
 
 if [[ "$UPDATE_MODE" == true ]]; then
-  if [[ "$INCLUDE_TEMPLATES" == false || "$INCLUDE_EXAMPLES" == true || "$RUN_SETUP" == false ]]; then
-    error "--no-templates, --with-examples, and --no-setup are bootstrap-only options."
+  if [[ "$INCLUDE_TEMPLATES" == false || "$RUN_SETUP" == false ]]; then
+    error "--no-templates and --no-setup are bootstrap-only options."
     echo "  Remove bootstrap-only flags when using --update."
     exit 1
   fi
@@ -556,7 +596,6 @@ echo "  Source : $CLEAR_ROOT"
 echo "  Target : $TARGET_DIR"
 [[ "$DRY_RUN" == true ]] && warn "Dry-run mode — no files will be written."
 [[ "$INCLUDE_TEMPLATES" == false ]] && warn "Skipping templates/ directory."
-[[ "$INCLUDE_EXAMPLES" == true ]] && info "Including example skill files."
 echo ""
 
 # ── Track results
@@ -636,14 +675,14 @@ for item in "${COPY_IF_MISSING[@]}"; do
   fi
 done
 
-# ── Remove examples if --with-examples was not specified
-if [[ "$INCLUDE_TEMPLATES" == true && "$INCLUDE_EXAMPLES" == false ]]; then
+# ── Remove examples from onboarding templates; install them explicitly via --install-examples
+if [[ "$INCLUDE_TEMPLATES" == true ]]; then
   if [[ -d "$TARGET_DIR/templates/examples" ]]; then
     if [[ "$DRY_RUN" == false ]]; then
       rm -rf "$TARGET_DIR/templates/examples"
-      info "Skipped examples (use --with-examples to include)"
+      info "Skipped examples in onboarding (use --install-examples <path> to extract on demand)"
     else
-      info "Would skip examples (use --with-examples to include)"
+      info "Would skip examples in onboarding (use --install-examples <path> to extract on demand)"
     fi
   fi
 fi

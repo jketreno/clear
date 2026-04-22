@@ -18,9 +18,9 @@ The `templates/architecture-tests/` directory contains tests that work on any CL
 
 ## Installing examples into your project
 
-During bootstrap:
+Extract examples on demand:
 ```bash
-./scripts/bootstrap-project.sh --with-examples /path/to/your-project
+./scripts/bootstrap-project.sh --install-examples /path/to/examples
 ```
 
 Or copy individually:

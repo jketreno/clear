@@ -155,9 +155,8 @@ templates/
 Domain-specific examples (API endpoint skills, type-sync tests, etc.) are available separately:
 
 ```bash
-# Re-run the installer to add examples:
-bash clear-installer-v1.0.0.sh --target /path/to/your-project
-# Examples are in templates/examples/ if installed with --with-examples during bootstrap
+# Extract examples on demand (outside onboarding):
+./scripts/bootstrap-project.sh --install-examples /path/to/examples
 ```
 
 ---
@@ -183,7 +182,7 @@ If you prefer to work from the git repo (for contributing or customizing CLEAR i
 git clone https://github.com/jketreno/clear
 cd clear
 ./scripts/bootstrap-project.sh /path/to/your-project          # install + setup wizard
-./scripts/bootstrap-project.sh --with-examples /path/to/project  # include domain-specific examples
+./scripts/bootstrap-project.sh --install-examples /path/to/examples  # extract domain-specific examples
 ./scripts/bootstrap-project.sh --dry-run /path/to/project        # preview only
 ./scripts/bootstrap-project.sh --update /path/to/project         # update an existing CLEAR install
 ```
