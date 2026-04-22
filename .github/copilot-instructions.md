@@ -26,12 +26,13 @@ Fill in the bracketed values from the actual files. Show this block **once per c
 
 ## Core Rule: Never Mark Work Incomplete
 
-**Always run `./scripts/verify-ci.sh` before reporting work as complete.**
+After any file edit (create/update/delete), run `./scripts/verify-ci.sh`.
 
-- If it fails → fix the issues → run again → only then report completion
-- Never say "the work is complete" or "done" if `verify-ci.sh` fails
+- If it fails → fix the issues → run again → repeat until exit code 0
 - Never skip or bypass this script
-- On first run, if the script says tools aren't installed, report that to the user instead of guessing
+- Before sending a final response for an implementation task, include: verify-ci.sh result (PASS/FAIL), command used, and whether `--fast` or `--fix` was used (if applicable)
+- If running in read-only mode (Ask mode), explicitly state: "verify-ci.sh not run because session is read-only."
+- Rules guide behavior; CI enforces it. `./scripts/verify-ci.sh` is the source of truth
 
 ## Autonomy Boundaries [L]
 
@@ -94,8 +95,8 @@ Before generating code for any domain concept, check `clear/autonomy.yml`'s `sou
 5. Generate code following all constraints
 6. Run ./scripts/verify-ci.sh
 7. If fails: fix → rerun → repeat until passing
-8. Report: "X is complete. All CI checks pass. [list affected files]"
-9. Remind user to commit
+8. Report verify-ci status (PASS/FAIL), command used, and flags used (`--fast`/`--fix` if any)
+9. Summarize files changed and remind user to commit
 ```
 
 ## PLAN Mode

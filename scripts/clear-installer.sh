@@ -32,8 +32,73 @@ RUN_SETUP=true
 SETUP_ONLY=false
 WORK_DIR=""
 
-error() { echo "ERR  $*" >&2; }
-info() { echo "INFO $*"; }
+supports_color() {
+  [[ -z "${NO_COLOR:-}" ]] || return 1
+  [[ "${TERM:-}" != "dumb" ]] || return 1
+
+  if [[ -n "${FORCE_COLOR:-}" || -n "${CLICOLOR_FORCE:-}" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    return 0
+  fi
+
+  [[ -t 1 ]] || return 1
+
+  if command -v tput >/dev/null 2>&1; then
+    local colors
+    colors="$(tput colors 2>/dev/null || printf '0')"
+    [[ "$colors" =~ ^[0-9]+$ ]] || return 1
+    ((colors >= 8)) || return 1
+  fi
+
+  return 0
+}
+
+if supports_color; then
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[1;33m'
+  BLUE='\033[0;34m'
+  CYAN='\033[0;36m'
+  NC='\033[0m'
+else
+  RED=''
+  GREEN=''
+  YELLOW=''
+  BLUE=''
+  CYAN=''
+  NC=''
+fi
+
+error() { echo -e "${RED}❌ $*${NC}" >&2; }
+info() { echo -e "${BLUE}ℹ  $*${NC}"; }
+warn() { echo -e "${YELLOW}⚠  $*${NC}"; }
+success() { echo -e "${GREEN}✅ $*${NC}"; }
+
+header() {
+  echo ""
+  echo -e "${BLUE}════════════════════════════════════════════${NC}"
+  echo -e "${BLUE}  $1${NC}"
+  echo -e "${BLUE}════════════════════════════════════════════${NC}"
+  echo ""
+}
+
+detect_installer_version() {
+  local script_name
+  script_name="$(basename "$SCRIPT_PATH")"
+
+  if [[ "$script_name" =~ ^clear-installer-v([0-9]+\.[0-9]+\.[0-9]+)\.sh$ ]]; then
+    echo "${BASH_REMATCH[1]}"
+    return 0
+  fi
+
+  local version_file
+  version_file="$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)/VERSION"
+  if [[ -f "$version_file" ]]; then
+    head -n 1 "$version_file"
+    return 0
+  fi
+
+  echo "0.0.0"
+}
 
 usage() {
   cat <<'USAGE'
@@ -137,6 +202,52 @@ ask() {
   echo "${answer:-$default}"
 }
 
+ask_yn() {
+  local question="$1"
+  local default="${2:-y}"
+  local answer
+
+  if [[ "$YES" == "true" ]]; then
+    [[ "$default" =~ ^[Yy]$ ]]
+    return
+  fi
+
+  if [[ "$default" == "y" ]]; then
+    printf "?  %s [Y/n]: " "$question" >&2
+  else
+    printf "?  %s [y/N]: " "$question" >&2
+  fi
+
+  read -r answer
+  answer="${answer:-$default}"
+  [[ "$answer" =~ ^[Yy] ]]
+}
+
+get_skill_meta() {
+  local file="$1"
+  local field="$2"
+  local first_line
+
+  first_line=$(head -1 "$file")
+  if [[ "$first_line" == "---" ]]; then
+    awk -v f="${field}:" '
+      NR==1{next}
+      /^---$/{exit}
+      index($0,f)==1{
+        val=substr($0,length(f)+1)
+        sub(/^[[:space:]"\x27]+/,"",val)
+        sub(/[[:space:]"\x27]+$/,"",val)
+        print val
+        exit
+      }
+    ' "$file"
+  elif [[ "$field" == "name" ]]; then
+    basename "$file" .md
+  else
+    awk '/^# CLEAR Skill:/{sub(/^# CLEAR Skill: /,""); print; exit}' "$file"
+  fi
+}
+
 sync_autonomy_project_name() {
   local autonomy_file="$1"
   local selected_project_name="$2"
@@ -188,23 +299,274 @@ sync_autonomy_project_name() {
 run_setup_flow() {
   local setup_target="$1"
   local setup_source_root="$2"
+  local is_fresh_install="${3:-false}"
 
+  local skills_dir prompts_dir extensions_file
+  local claude_commands_dir cursor_rules_dir vscode_prompts_dir
+  local installed_skills=""
+
+  skills_dir="$setup_source_root/templates/skills"
+  prompts_dir="$setup_target/.github/prompts"
+  claude_commands_dir="$setup_target/.claude/commands"
+  cursor_rules_dir="$setup_target/.cursor/rules"
+  vscode_prompts_dir="$setup_target/.vscode/prompts"
+  extensions_file="$setup_target/clear/extensions.yml"
+
+  install_skills_from_arrays() {
+    local label="$1"
+    shift
+    local -n _files=$1 _names=$2 _descs=$3
+
+    [[ ${#_files[@]} -gt 0 ]] || return 0
+
+    echo "$label (installed to .github/prompts/ and mirrored for Claude/Cursor/VS Code):"
+    echo ""
+    for _i in "${!_files[@]}"; do
+      printf "  %d. %s\n" "$((_i + 1))" "${_names[$_i]}"
+      printf "     %s\n" "${_descs[$_i]}"
+      echo ""
+    done
+
+    local selection
+    if [[ "$YES" == "true" ]]; then
+      selection=""
+    else
+      printf "${CYAN}  Enter numbers to install (space-separated), 'all', or press ENTER to skip: ${NC}" >/dev/tty
+      read -r selection </dev/tty
+    fi
+    echo ""
+
+    if [[ -z "$selection" ]]; then
+      info "Skipped"
+      return 0
+    fi
+
+    local to_install=()
+    if [[ "$selection" == "all" ]]; then
+      for _i in "${!_files[@]}"; do
+        to_install+=("$_i")
+      done
+    else
+      for token in $selection; do
+        if [[ "$token" =~ ^[0-9]+$ ]]; then
+          local idx=$((token - 1))
+          if [[ $idx -ge 0 && $idx -lt ${#_files[@]} ]]; then
+            to_install+=("$idx")
+          else
+            warn "No skill at position $token — skipped"
+          fi
+        fi
+      done
+    fi
+
+    if [[ ${#to_install[@]} -gt 0 ]]; then
+      mkdir -p "$prompts_dir"
+      mkdir -p "$claude_commands_dir"
+      mkdir -p "$cursor_rules_dir"
+      mkdir -p "$vscode_prompts_dir"
+      for idx in "${to_install[@]}"; do
+        local name="${_names[$idx]}"
+        local src_file="${_files[$idx]}"
+        cp "$src_file" "$prompts_dir/${name}.prompt.md"
+        cp "$src_file" "$claude_commands_dir/${name}.md"
+        cp "$src_file" "$vscode_prompts_dir/${name}.prompt.md"
+
+        {
+          echo "---"
+          echo "description: CLEAR skill mirror for $name"
+          echo "alwaysApply: false"
+          echo "---"
+          echo ""
+          cat "$src_file"
+        } >"$cursor_rules_dir/skill-${name}.mdc"
+
+        success "Installed: .github/prompts/${name}.prompt.md"
+        success "Mirrored: .claude/commands/${name}.md"
+        success "Mirrored: .cursor/rules/skill-${name}.mdc"
+        success "Mirrored: .vscode/prompts/${name}.prompt.md"
+        installed_skills="$installed_skills $name"
+      done
+    fi
+  }
+
+  header "CLEAR Setup — Step 1: Project Info"
   local project_name
   project_name="$(ask "Project name" "$(basename "$setup_target")")"
   [[ -n "$project_name" ]] || project_name="$(basename "$setup_target")"
+  echo ""
+  info "Setting up CLEAR for: $project_name"
 
+  header "CLEAR Setup — Step 2: Autonomy Boundaries"
   mkdir -p "$setup_target/clear"
-  if [[ ! -f "$setup_target/clear/autonomy.yml" ]]; then
+  if [[ "$is_fresh_install" == "true" || ! -f "$setup_target/clear/autonomy.yml" ]]; then
     copy_file_if_missing "$setup_source_root/templates/agent-configs/clear/autonomy.yml" "$setup_target/clear/autonomy.yml"
+    success "Created starter clear/autonomy.yml"
+  else
+    info "Keeping existing clear/autonomy.yml"
   fi
   sync_autonomy_project_name "$setup_target/clear/autonomy.yml" "$project_name"
 
+  header "CLEAR Setup — Step 3: Script Permissions"
   if [[ -d "$setup_target/scripts" ]]; then
     chmod +x "$setup_target/scripts/"*.sh 2>/dev/null || true
+    success "Ensured scripts are executable"
   fi
 
-  info "Setup completed for: $project_name"
-  info "Next: review clear/autonomy.yml and run ./scripts/verify-ci.sh in your project."
+  header "CLEAR Setup — Step 4: Install Skills [optional]"
+  if [[ -d "$skills_dir" ]]; then
+    SKILL_FILES=()
+    SKILL_NAMES=()
+    SKILL_DESCS=()
+    for skill_file in "$skills_dir"/*.md; do
+      [[ -f "$skill_file" ]] || continue
+      SKILL_FILES+=("$skill_file")
+      SKILL_NAMES+=("$(get_skill_meta "$skill_file" "name")")
+      SKILL_DESCS+=("$(get_skill_meta "$skill_file" "description")")
+    done
+
+    install_skills_from_arrays "Generic skills" SKILL_FILES SKILL_NAMES SKILL_DESCS
+  else
+    info "No generic skills found in $skills_dir"
+  fi
+
+  header "CLEAR Setup — Step 5: Extensions [optional]"
+  echo "CLEAR extensions add optional tool checks to verify-ci.sh."
+  echo ""
+  if [[ -f "$extensions_file" ]]; then
+    EXT_NAMES=()
+    EXT_DESCS=()
+    EXT_CMDS=()
+    EXT_HINTS=()
+    EXT_URLS=()
+    local_name=""
+    local_desc=""
+    local_cmd=""
+    local_hint=""
+    local_url=""
+
+    while IFS= read -r line; do
+      if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*name:[[:space:]]*(.*) ]]; then
+        if [[ -n "$local_name" ]]; then
+          EXT_NAMES+=("$local_name")
+          EXT_DESCS+=("$local_desc")
+          EXT_CMDS+=("$local_cmd")
+          EXT_HINTS+=("$local_hint")
+          EXT_URLS+=("$local_url")
+        fi
+        local_name="${BASH_REMATCH[1]}"
+        local_name="${local_name#\"}"
+        local_name="${local_name%\"}"
+        local_desc=""
+        local_cmd=""
+        local_hint=""
+        local_url=""
+      elif [[ "$line" =~ ^[[:space:]]*description:[[:space:]]*(.*) ]]; then
+        local_desc="${BASH_REMATCH[1]}"
+        local_desc="${local_desc#\"}"
+        local_desc="${local_desc%\"}"
+      elif [[ "$line" =~ ^[[:space:]]*command:[[:space:]]*(.*) ]]; then
+        local_cmd="${BASH_REMATCH[1]}"
+        local_cmd="${local_cmd#\"}"
+        local_cmd="${local_cmd%\"}"
+      elif [[ "$line" =~ ^[[:space:]]*install_hint:[[:space:]]*(.*) ]]; then
+        local_hint="${BASH_REMATCH[1]}"
+        local_hint="${local_hint#\"}"
+        local_hint="${local_hint%\"}"
+      elif [[ "$line" =~ ^[[:space:]]*project_url:[[:space:]]*(.*) ]]; then
+        local_url="${BASH_REMATCH[1]}"
+        local_url="${local_url#\"}"
+        local_url="${local_url%\"}"
+      fi
+    done <"$extensions_file"
+
+    if [[ -n "$local_name" ]]; then
+      EXT_NAMES+=("$local_name")
+      EXT_DESCS+=("$local_desc")
+      EXT_CMDS+=("$local_cmd")
+      EXT_HINTS+=("$local_hint")
+      EXT_URLS+=("$local_url")
+    fi
+
+    for _i in "${!EXT_NAMES[@]}"; do
+      printf "  %d. %s — %s\n" "$((_i + 1))" "${EXT_NAMES[$_i]}" "${EXT_DESCS[$_i]}"
+      printf "     Install: %s\n" "${EXT_HINTS[$_i]}"
+      [[ -n "${EXT_URLS[$_i]}" ]] && printf "     Project: %s\n" "${EXT_URLS[$_i]}"
+      echo ""
+    done
+
+    EXT_SELECTION=""
+    if [[ "$YES" != "true" ]]; then
+      printf "${CYAN}  Enter numbers to enable (space-separated), 'all', or press ENTER to skip: ${NC}" >/dev/tty
+      read -r EXT_SELECTION </dev/tty
+    fi
+    echo ""
+
+    if [[ -n "$EXT_SELECTION" ]]; then
+      ENABLE_IDX=()
+      if [[ "$EXT_SELECTION" == "all" ]]; then
+        for _i in "${!EXT_NAMES[@]}"; do
+          ENABLE_IDX+=("$_i")
+        done
+      else
+        for token in $EXT_SELECTION; do
+          if [[ "$token" =~ ^[0-9]+$ ]]; then
+            idx=$((token - 1))
+            if [[ $idx -ge 0 && $idx -lt ${#EXT_NAMES[@]} ]]; then
+              ENABLE_IDX+=("$idx")
+            else
+              warn "No extension at position $token — skipped"
+            fi
+          fi
+        done
+      fi
+
+      for idx in "${ENABLE_IDX[@]}"; do
+        ext="${EXT_NAMES[$idx]}"
+        cmd="${EXT_CMDS[$idx]:-$ext}"
+        hint="${EXT_HINTS[$idx]:-check the extensions.yml for install instructions}"
+
+        if [[ "${hint,,}" == *"built-in"* ]] || command -v "$cmd" &>/dev/null; then
+          sed -i "/name:[[:space:]]*${ext}/,/enabled:/{s/enabled:[[:space:]]*false/enabled: true/}" "$extensions_file"
+          success "Enabled extension: $ext"
+        elif ask_yn "Enable $ext without installing? (verify-ci.sh will remind you)" "n"; then
+          sed -i "/name:[[:space:]]*${ext}/,/enabled:/{s/enabled:[[:space:]]*false/enabled: true/}" "$extensions_file"
+          success "Enabled extension: $ext (not yet installed)"
+        else
+          info "Skipped $ext"
+        fi
+      done
+    else
+      info "No extensions enabled — edit clear/extensions.yml later to enable"
+    fi
+  else
+    info "No extensions.yml found — extensions available after install"
+  fi
+
+  header "Setup Complete"
+  success "CLEAR is configured for: $project_name"
+  if [[ -n "$installed_skills" ]]; then
+    echo "Installed skills:$installed_skills"
+  fi
+
+  echo ""
+  echo "Next steps:"
+
+  if [[ " $installed_skills " == *" autonomy-bootstrap "* ]]; then
+    echo "1. Open your AI assistant (Cursor, Copilot Chat, Claude, etc.)."
+    echo "2. Copy/paste this prompt to generate project-specific autonomy rules:"
+    echo ""
+    echo "Analyze this repository and create clear/autonomy.yml for CLEAR."
+    echo "Include module boundaries with path, level (full-autonomy/supervised/humans-only),"
+    echo "and reason for each entry, ending with a wildcard default. Also add 3-8"
+    echo "sources_of_truth entries (concept, source_of_truth, defined_in, note)."
+    echo "Then validate the YAML and show the proposed file content."
+    echo ""
+    echo "3. Review clear/autonomy.yml for your project specifics."
+    echo "4. Run ./scripts/verify-ci.sh in your project."
+  else
+    echo "1. Review clear/autonomy.yml for your project specifics."
+    echo "2. Run ./scripts/verify-ci.sh in your project."
+  fi
 }
 
 while [[ $# -gt 0 ]]; do
@@ -241,7 +603,7 @@ while [[ $# -gt 0 ]]; do
       EXTRACT_PATH="${2:-}"
       shift 2
       ;;
-    --help|-h)
+    --help | -h)
       usage
       exit 0
       ;;
@@ -271,7 +633,11 @@ if has_embedded_payload; then
   EMBEDDED_MODE=true
 fi
 
-if [[ -n "$EXTRACT_PATH" && ( "$TARGET_DIR" != "$PWD" || "$DRY_RUN" == "true" || "$YES" == "true" ) ]]; then
+INSTALLER_VERSION="$(detect_installer_version)"
+header "CLEAR AI-Assisted Development Framework
+  v${INSTALLER_VERSION}"
+
+if [[ -n "$EXTRACT_PATH" && ("$TARGET_DIR" != "$PWD" || "$DRY_RUN" == "true" || "$YES" == "true") ]]; then
   error "--extract cannot be combined with --target/positional target, --dry-run, or --yes"
   exit "$EXIT_USAGE"
 fi
@@ -281,12 +647,12 @@ if [[ -n "$EXTRACT_PATH" && -n "$INSTALL_EXAMPLES_PATH" ]]; then
   exit "$EXIT_USAGE"
 fi
 
-if [[ "$SETUP_ONLY" == "true" && ( -n "$EXTRACT_PATH" || -n "$INSTALL_EXAMPLES_PATH" ) ]]; then
+if [[ "$SETUP_ONLY" == "true" && (-n "$EXTRACT_PATH" || -n "$INSTALL_EXAMPLES_PATH") ]]; then
   error "--setup-only cannot be combined with --extract or --install-examples"
   exit "$EXIT_USAGE"
 fi
 
-if [[ -n "$INSTALL_EXAMPLES_PATH" && ( "$TARGET_DIR" != "$PWD" || "$DRY_RUN" == "true" || "$YES" == "true" || "$RUN_SETUP" == "false" ) ]]; then
+if [[ -n "$INSTALL_EXAMPLES_PATH" && ("$TARGET_DIR" != "$PWD" || "$DRY_RUN" == "true" || "$YES" == "true" || "$RUN_SETUP" == "false") ]]; then
   error "--install-examples cannot be combined with --target/positional target, --dry-run, --yes, or --no-setup"
   exit "$EXIT_USAGE"
 fi
@@ -379,7 +745,9 @@ if [[ -n "$INSTALL_EXAMPLES_PATH" ]]; then
 fi
 
 if [[ "$SETUP_ONLY" == "true" ]]; then
-  run_setup_flow "$TARGET_DIR" "$SOURCE_ROOT"
+  setup_only_is_fresh="false"
+  [[ -f "$TARGET_DIR/clear/autonomy.yml" ]] || setup_only_is_fresh="true"
+  run_setup_flow "$TARGET_DIR" "$SOURCE_ROOT" "$setup_only_is_fresh"
   echo "RESULT success mode=setup-only"
   exit 0
 fi
@@ -396,9 +764,11 @@ if [[ "$DRY_RUN" == "true" ]]; then
   exit 0
 fi
 
+is_fresh_install="false"
 if [[ -f "$TARGET_DIR/clear/autonomy.yml" ]]; then
   info "Detected existing CLEAR project. Running update workflow."
 else
+  is_fresh_install="true"
   info "Detected fresh target. Running bootstrap workflow."
 fi
 
@@ -417,14 +787,6 @@ copy_file_if_missing "$SOURCE_ROOT/templates/agent-configs/scripts/verify-local.
 copy_file_if_missing "$SOURCE_ROOT/templates/agent-configs/clear/autonomy.yml" "$TARGET_DIR/clear/autonomy.yml"
 copy_file_if_missing "$SOURCE_ROOT/clear/extensions.yml" "$TARGET_DIR/clear/extensions.yml"
 copy_file_if_missing "$SOURCE_ROOT/templates/agent-configs/.gitignore" "$TARGET_DIR/.gitignore"
-
-# Templates copied without examples as part of onboarding
-if [[ -d "$SOURCE_ROOT/templates" ]]; then
-  copy_dir_update "$SOURCE_ROOT/templates" "$TARGET_DIR/templates"
-  if [[ -d "$TARGET_DIR/templates/examples" ]]; then
-    rm -rf "$TARGET_DIR/templates/examples"
-  fi
-fi
 
 # Keep already-installed generic skills current.
 if [[ -d "$TARGET_DIR/.github/prompts" ]]; then
@@ -445,12 +807,8 @@ if [[ -d "$TARGET_DIR/scripts" ]]; then
 fi
 
 if [[ "$RUN_SETUP" == "true" ]]; then
-  info "Running setup wizard..."
-  run_setup_flow "$TARGET_DIR" "$SOURCE_ROOT"
+  run_setup_flow "$TARGET_DIR" "$SOURCE_ROOT" "$is_fresh_install"
 else
   info "Setup wizard skipped (--no-setup)."
 fi
-
-info "Installer completed successfully"
-echo "RESULT success mode=install-or-update"
 exit 0

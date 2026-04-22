@@ -4,7 +4,7 @@ This project uses the **CLEAR** framework for AI-assisted development.
 
 ## Non-Negotiable Rule
 
-**Run `./scripts/verify-ci.sh` before reporting any work as complete.**
+After any file edit (create/update/delete), run `./scripts/verify-ci.sh`.
 
 ```bash
 ./scripts/verify-ci.sh        # Full check
@@ -12,8 +12,16 @@ This project uses the **CLEAR** framework for AI-assisted development.
 ./scripts/verify-ci.sh --fix  # Auto-fix lint issues
 ```
 
-If it fails → fix the issues → run again → report complete only when all checks pass.  
-**Never say work is complete if verify-ci.sh fails.**
+If it fails → fix the issues → run again → repeat until exit code 0.
+
+Before sending a final response for an implementation task, include:
+- verify-ci.sh result: PASS/FAIL
+- command used
+- whether `--fast` or `--fix` was used (if applicable)
+
+If running in read-only mode (Ask mode), explicitly state: "verify-ci.sh not run because session is read-only."
+
+Rules guide behavior; CI enforces it. `./scripts/verify-ci.sh` is the source of truth.
 
 ---
 
@@ -64,7 +72,8 @@ Generate/modify code
        ↓
 Run ./scripts/verify-ci.sh
        ↓
-PASS? → Report: "Complete. All checks pass. Files changed: [list]"
+PASS? → Report verify-ci status (PASS), command used, and flags used
+    Then summarize files changed and remind to commit
          Remind: "Please review the diff and commit."
        ↓
 FAIL? → Read error output

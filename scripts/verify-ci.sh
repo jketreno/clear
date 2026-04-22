@@ -144,6 +144,20 @@ path_within_scan_paths() {
   return 1
 }
 
+scan_paths_exist() {
+  local scan_paths="$1"
+
+  [[ -z "$scan_paths" ]] && return 0
+
+  for scan_path in $scan_paths; do
+    scan_path="${scan_path#./}"
+    [[ -z "$scan_path" || "$scan_path" == "." ]] && return 0
+    [[ -e "$PROJECT_ROOT/$scan_path" ]] && return 0
+  done
+
+  return 1
+}
+
 matches_any_file_type() {
   local rel_path="$1"
   local file_types="$2"
@@ -182,12 +196,18 @@ run_lizard_check() {
   local extra_flags="$3"
   local file_types="${4:-js jsx ts tsx}"
   local exclude_patterns="$5"
+  local effective_scan_paths="$scan_paths"
+
+  if ! scan_paths_exist "$scan_paths"; then
+    effective_scan_paths="."
+    warn "Lizard: configured paths not found (paths: $scan_paths); falling back to project root"
+  fi
 
   local lizard_files=()
   while IFS= read -r rel_path; do
     [[ -z "$rel_path" ]] && continue
     is_default_ignored_path "$rel_path" && continue
-    path_within_scan_paths "$rel_path" "$scan_paths" || continue
+    path_within_scan_paths "$rel_path" "$effective_scan_paths" || continue
     matches_any_file_type "$rel_path" "$file_types" || continue
     is_extension_excluded "$rel_path" "$exclude_patterns" && continue
 
@@ -197,7 +217,7 @@ run_lizard_check() {
   done < <(list_project_files_respecting_gitignore)
 
   if [[ ${#lizard_files[@]} -eq 0 ]]; then
-    warn "Lizard: no files matched configured paths/types (paths: $scan_paths, types: $file_types)"
+    warn "Lizard: no files matched configured paths/types (paths: $effective_scan_paths, types: $file_types)"
     return 0
   fi
 
@@ -525,14 +545,20 @@ run_file_size_check() {
   local scan_paths="${2:-src}"
   local file_types="${3:-js ts tsx jsx}"
   local exclude_patterns="${4:-}"
+  local effective_scan_paths="$scan_paths"
   local oversized_files=()
   local oversized_counts=()
   local checked_files=0
 
+  if ! scan_paths_exist "$scan_paths"; then
+    effective_scan_paths="."
+    warn "File size check: configured paths not found (paths: $scan_paths); falling back to project root"
+  fi
+
   while IFS= read -r rel_path; do
     [[ -z "$rel_path" ]] && continue
     is_default_ignored_path "$rel_path" && continue
-    path_within_scan_paths "$rel_path" "$scan_paths" || continue
+    path_within_scan_paths "$rel_path" "$effective_scan_paths" || continue
     matches_any_file_type "$rel_path" "$file_types" || continue
     is_extension_excluded "$rel_path" "$exclude_patterns" && continue
 
@@ -550,7 +576,7 @@ run_file_size_check() {
   done < <(list_project_files_respecting_gitignore)
 
   if [[ "$checked_files" -eq 0 ]]; then
-    warn "File size check: no files matched configured paths/types (paths: $scan_paths, types: $file_types)"
+    warn "File size check: no files matched configured paths/types (paths: $effective_scan_paths, types: $file_types)"
     return 0
   fi
 
@@ -613,6 +639,7 @@ main() {
   if [[ ${#FAILED_CHECKS[@]} -eq 0 ]]; then
     echo -e "${GREEN}✅ All checks passed — work is complete.${NC}"
     echo -e "${GREEN}   You may now commit your changes.${NC}"
+    echo ""
     exit 0
   else
     echo -e "${RED}❌ ${#FAILED_CHECKS[@]} check(s) failed:${NC}"
