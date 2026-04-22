@@ -25,7 +25,8 @@ Look at the top-level structure:
 ```
 scripts/          — verify-ci.sh (enforcement), clear-installer.sh (install/update/setup)
 clear/            — autonomy.yml (boundaries), principles.md (reference)
-templates/        — copy-paste starting points for architecture tests and skills
+clear/templates/  — copy-paste starting points for architecture tests and skills
+clear/examples/   — domain-specific examples to learn from and customize
 docs/             — this documentation
 .github/          — Copilot configs + GitHub Actions template
 .cursor/rules/    — Cursor AI rules
@@ -86,9 +87,9 @@ The setup wizard will:
 
 ## Step 3: Add your project's checks
 
-`verify-ci.sh` auto-detects your stack (Node, Python, Go, Rust) and is CLEAR-owned — updated when you pull new CLEAR versions. Your project-specific checks go in `scripts/verify-local.sh`, which is never overwritten.
+`verify-ci.sh` auto-detects your stack (Node, Python, Go, Rust) and is CLEAR-owned — updated when you pull new CLEAR versions. Your project-specific checks go in `clear/verify-local.sh`, which is never overwritten.
 
-Open `scripts/verify-local.sh` and add your project's checks:
+Open `clear/verify-local.sh` and add your project's checks:
 
 **For Node.js/TypeScript:**
 ```bash
@@ -117,7 +118,7 @@ All helpers (`run_check`, `pass`, `fail`, `info`, `warn`, `section`) and variabl
 **Run it now** to see what passes and what doesn't in your current project:
 
 ```bash
-./scripts/verify-ci.sh
+./clear/verify-ci.sh
 ```
 
 Don't worry if things fail — that's the point. You're establishing a baseline.
@@ -178,9 +179,9 @@ Pick ONE of these — the one that matches your biggest current pain point:
    ```
    Turn this code review rule into an architecture test:
    "[YOUR RULE]"
-   Wire it into scripts/verify-ci.sh.
+   Wire it into clear/verify-ci.sh.
    ```
-3. Review the generated test. Run `./scripts/verify-ci.sh`.
+3. Review the generated test. Run `./clear/verify-ci.sh`.
 4. That rule now fails before it reaches code review.
 
 ### Option B: Mark a module boundary [L]
@@ -203,7 +204,7 @@ Pick ONE of these — the one that matches your biggest current pain point:
 1. Pick one external dependency (database, OAuth/IAM provider, external API)
 2. Ask your AI:
    ```
-   Write a reality test using templates/examples/skills/reality-test.md
+   Write a reality test using clear/examples/skills/reality-test.md
    that verifies our [concept] model matches [external system].
    ```
 3. Run it against your staging environment
@@ -212,16 +213,16 @@ Pick ONE of these — the one that matches your biggest current pain point:
 
 ## Step 6: Add Architecture Tests
 
-Copy a template from `templates/architecture-tests/` (generic) or `templates/examples/architecture-tests/` (domain-specific) into `tests/architecture/`:
+Copy a template from `clear/templates/architecture-tests/` (generic) or `clear/examples/architecture-tests/` (domain-specific) into `tests/architecture/`:
 
 ```bash
-cp templates/architecture-tests/autonomy-guard.test.js tests/architecture/
-cp templates/examples/architecture-tests/api-rules.test.js tests/architecture/
+cp clear/templates/architecture-tests/autonomy-guard.test.js tests/architecture/
+cp clear/examples/architecture-tests/api-rules.test.js tests/architecture/
 ```
 
 Edit the copied files to match your project structure (the `// UPDATE:` comments show you where).
 
-Add to `scripts/verify-local.sh`:
+Add to `clear/verify-local.sh`:
 ```bash
 run_check "Architecture tests" "cd '$PROJECT_ROOT' && npx jest tests/architecture/ 2>&1"
 ```
@@ -249,7 +250,7 @@ run_check "Architecture tests" "cd '$PROJECT_ROOT' && npx jest tests/architectur
 After any AI-generated change, run:
 
 ```bash
-./scripts/verify-ci.sh
+./clear/verify-ci.sh
 ```
 
 If it passes: commit.  

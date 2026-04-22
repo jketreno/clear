@@ -116,7 +116,7 @@ Options:
   --no-setup        Skip running setup wizard after install/update
   --setup-only      Run setup flow only (internal use)
   --install-examples <path>
-                    Extract templates/examples to <path> and exit
+                    Extract CLEAR examples to <path> and exit
   --extract <path>  Extract full embedded payload only, do not install/update
   --help            Show this help
 USAGE
@@ -305,7 +305,7 @@ run_setup_flow() {
   local claude_commands_dir cursor_rules_dir vscode_prompts_dir
   local installed_skills=""
 
-  skills_dir="$setup_source_root/templates/skills"
+  skills_dir="$setup_source_root/install/clear/templates/skills"
   prompts_dir="$setup_target/.github/prompts"
   claude_commands_dir="$setup_target/.claude/commands"
   cursor_rules_dir="$setup_target/.cursor/rules"
@@ -399,7 +399,7 @@ run_setup_flow() {
   header "CLEAR Setup — Step 2: Autonomy Boundaries"
   mkdir -p "$setup_target/clear"
   if [[ "$is_fresh_install" == "true" || ! -f "$setup_target/clear/autonomy.yml" ]]; then
-    copy_file_if_missing "$setup_source_root/templates/agent-configs/clear/autonomy.yml" "$setup_target/clear/autonomy.yml"
+    copy_file_if_missing "$setup_source_root/install/clear/autonomy.yml" "$setup_target/clear/autonomy.yml"
     success "Created starter clear/autonomy.yml"
   else
     info "Keeping existing clear/autonomy.yml"
@@ -407,8 +407,8 @@ run_setup_flow() {
   sync_autonomy_project_name "$setup_target/clear/autonomy.yml" "$project_name"
 
   header "CLEAR Setup — Step 3: Script Permissions"
-  if [[ -d "$setup_target/scripts" ]]; then
-    chmod +x "$setup_target/scripts/"*.sh 2>/dev/null || true
+  if [[ -d "$setup_target/clear" ]]; then
+    chmod +x "$setup_target/clear/"*.sh 2>/dev/null || true
     success "Ensured scripts are executable"
   fi
 
@@ -562,10 +562,10 @@ run_setup_flow() {
     echo "Then validate the YAML and show the proposed file content."
     echo ""
     echo "3. Review clear/autonomy.yml for your project specifics."
-    echo "4. Run ./scripts/verify-ci.sh in your project."
+    echo "4. Run ./clear/verify-ci.sh in your project."
   else
     echo "1. Review clear/autonomy.yml for your project specifics."
-    echo "2. Run ./scripts/verify-ci.sh in your project."
+    echo "2. Run ./clear/verify-ci.sh in your project."
   fi
 }
 
@@ -714,7 +714,7 @@ else
 fi
 
 if [[ -n "$INSTALL_EXAMPLES_PATH" ]]; then
-  EXAMPLES_SOURCE="$SOURCE_ROOT/templates/examples"
+  EXAMPLES_SOURCE="$SOURCE_ROOT/install/clear/examples"
   [[ -d "$EXAMPLES_SOURCE" ]] || {
     error "Examples source not found: $EXAMPLES_SOURCE"
     exit "$EXIT_RUNTIME"
@@ -732,7 +732,7 @@ if [[ -n "$INSTALL_EXAMPLES_PATH" ]]; then
   fi
 
   if [[ "$DRY_RUN" == "true" ]]; then
-    info "Dry run: would copy templates/examples/* to $INSTALL_EXAMPLES_PATH"
+    info "Dry run: would copy clear/examples/* to $INSTALL_EXAMPLES_PATH"
     echo "RESULT success mode=install-examples dry-run=true"
     exit 0
   fi
@@ -759,7 +759,7 @@ fi
 
 if [[ "$DRY_RUN" == "true" ]]; then
   info "Dry run: would install/update CLEAR files in $TARGET_DIR"
-  info "Dry run: scripts copied to target include verify-ci.sh only (verify-local.sh create-if-missing)"
+  info "Dry run: CLEAR-managed files go under clear/, .claude/, .cursor/, .github/, .vscode/, and root"
   echo "RESULT success mode=install-or-update dry-run=true"
   exit 0
 fi
@@ -773,28 +773,31 @@ else
 fi
 
 # CLEAR-managed files (always updated)
-copy_file_update "$SOURCE_ROOT/scripts/verify-ci.sh" "$TARGET_DIR/scripts/verify-ci.sh"
+copy_file_update "$SOURCE_ROOT/install/clear/verify-ci.sh" "$TARGET_DIR/clear/verify-ci.sh"
 copy_file_update "$SOURCE_ROOT/clear/principles.md" "$TARGET_DIR/clear/principles.md"
-copy_dir_update "$SOURCE_ROOT/templates/agent-configs/.github" "$TARGET_DIR/.github" "prompts"
-copy_dir_update "$SOURCE_ROOT/templates/agent-configs/.cursor" "$TARGET_DIR/.cursor"
-copy_dir_update "$SOURCE_ROOT/templates/agent-configs/.claude" "$TARGET_DIR/.claude"
-copy_dir_update "$SOURCE_ROOT/templates/agent-configs/.vscode" "$TARGET_DIR/.vscode"
-copy_file_update "$SOURCE_ROOT/templates/agent-configs/CLAUDE.md" "$TARGET_DIR/CLAUDE.md"
-copy_file_update "$SOURCE_ROOT/templates/agent-configs/.cursorrules" "$TARGET_DIR/.cursorrules"
+copy_dir_update "$SOURCE_ROOT/install/.github" "$TARGET_DIR/.github" "prompts"
+copy_dir_update "$SOURCE_ROOT/install/.cursor" "$TARGET_DIR/.cursor"
+copy_dir_update "$SOURCE_ROOT/install/.claude" "$TARGET_DIR/.claude"
+copy_dir_update "$SOURCE_ROOT/install/.vscode" "$TARGET_DIR/.vscode"
+copy_file_update "$SOURCE_ROOT/install/root/CLAUDE.md" "$TARGET_DIR/CLAUDE.md"
+copy_file_update "$SOURCE_ROOT/install/root/.cursorrules" "$TARGET_DIR/.cursorrules"
+copy_dir_update "$SOURCE_ROOT/install/clear/templates" "$TARGET_DIR/clear/templates"
+copy_dir_update "$SOURCE_ROOT/install/clear/examples" "$TARGET_DIR/clear/examples"
+copy_dir_update "$SOURCE_ROOT/install/clear/docs" "$TARGET_DIR/clear/docs"
 
 # Project-owned files (create-if-missing)
-copy_file_if_missing "$SOURCE_ROOT/templates/agent-configs/scripts/verify-local.sh" "$TARGET_DIR/scripts/verify-local.sh"
-copy_file_if_missing "$SOURCE_ROOT/templates/agent-configs/clear/autonomy.yml" "$TARGET_DIR/clear/autonomy.yml"
+copy_file_if_missing "$SOURCE_ROOT/install/clear/verify-local.sh" "$TARGET_DIR/clear/verify-local.sh"
+copy_file_if_missing "$SOURCE_ROOT/install/clear/autonomy.yml" "$TARGET_DIR/clear/autonomy.yml"
 copy_file_if_missing "$SOURCE_ROOT/clear/extensions.yml" "$TARGET_DIR/clear/extensions.yml"
-copy_file_if_missing "$SOURCE_ROOT/templates/agent-configs/.gitignore" "$TARGET_DIR/.gitignore"
+copy_file_if_missing "$SOURCE_ROOT/install/root/.gitignore" "$TARGET_DIR/.gitignore"
 
 # Keep already-installed generic skills current.
 if [[ -d "$TARGET_DIR/.github/prompts" ]]; then
   while IFS= read -r prompt_file; do
     skill_name="$(basename "$prompt_file" .prompt.md)"
     src_skill=""
-    if [[ -f "$SOURCE_ROOT/templates/skills/${skill_name}.md" ]]; then
-      src_skill="$SOURCE_ROOT/templates/skills/${skill_name}.md"
+    if [[ -f "$SOURCE_ROOT/install/clear/templates/skills/${skill_name}.md" ]]; then
+      src_skill="$SOURCE_ROOT/install/clear/templates/skills/${skill_name}.md"
     fi
     if [[ -n "$src_skill" ]]; then
       cp "$src_skill" "$prompt_file"
@@ -802,8 +805,8 @@ if [[ -d "$TARGET_DIR/.github/prompts" ]]; then
   done < <(find "$TARGET_DIR/.github/prompts" -name "*.prompt.md" -type f | sort)
 fi
 
-if [[ -d "$TARGET_DIR/scripts" ]]; then
-  chmod +x "$TARGET_DIR/scripts/"*.sh 2>/dev/null || true
+if [[ -d "$TARGET_DIR/clear" ]]; then
+  chmod +x "$TARGET_DIR/clear/"*.sh 2>/dev/null || true
 fi
 
 if [[ "$RUN_SETUP" == "true" ]]; then

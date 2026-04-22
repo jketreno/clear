@@ -103,10 +103,10 @@ The AI tools in this project are configured to check `clear/autonomy.yml` before
 
 ### Architecture test enforcement (CI)
 
-The autonomy guard test in `templates/architecture-tests/autonomy-guard.test.js` reads `autonomy.yml` and checks staged files against it:
+The autonomy guard test in `clear/templates/architecture-tests/autonomy-guard.test.js` reads `autonomy.yml` and checks staged files against it:
 
 ```bash
-# Add to verify-local.sh:
+# Add to clear/verify-local.sh:
 run_check "Autonomy guard" "cd '$PROJECT_ROOT' && npx jest tests/architecture/autonomy-guard.test.js 2>&1"
 ```
 

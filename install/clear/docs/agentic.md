@@ -246,7 +246,7 @@ CLEAR's job is to ensure that whatever any agent generates, it passes your archi
 - [ ] GitHub Actions workflow runs `verify-ci.sh` on every PR
 - [ ] (Optional) CLEAR MCP server scaffolded from `clear/templates/skills/mcp-server.md`
 - [ ] Orchestrator prompt template includes autonomy pre-flight check
-- [ ] Sub-agent prompts include `clear/verify-ci.sh` requirement
+- [ ] Sub-agent prompts include `verify-ci.sh` requirement
 
 ---
 
@@ -258,4 +258,4 @@ CLEAR's job is to ensure that whatever any agent generates, it passes your archi
 | Writing constraint tests for agentic code | [docs/principles/assertive.md](principles/assertive.md) |
 | Generated code workflows | [docs/principles/ephemeral.md](principles/ephemeral.md) |
 | Claude Code + MCP setup | [docs/ai-tools/claude.md](ai-tools/claude.md) |
-| MCP server skill template | [clear/templates/skills/mcp-server.md](../install/clear/templates/skills/mcp-server.md) |
+| MCP server skill template | [clear/templates/skills/mcp-server.md](../templates/skills/mcp-server.md) |

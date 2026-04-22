@@ -64,7 +64,7 @@ Expected: Cursor refuses and explains the boundary.
 
 **Test workflow:**
 Ask Cursor "What must you do before marking work complete?"
-Expected: Mentions `./scripts/verify-ci.sh`.
+Expected: Mentions `./clear/verify-ci.sh`.
 
 **Test PLAN mode:**
 Ask Cursor to implement a new feature.
@@ -85,7 +85,7 @@ globs: ["backend/models/**", "frontend/src/types/**"]
 # Type Sync Skill
 
 When modifying Python Pydantic models in backend/models/:
-[content of templates/examples/skills/type-sync.md]
+[content of clear/examples/skills/type-sync.md]
 ```
 
 ### Domain-specific rule (for a specific module)
@@ -133,7 +133,7 @@ For complex multi-file changes, use Cursor Composer (Ctrl/Cmd + I):
 3. Composer respects autonomy boundaries:
    - Generates code for `supervised` paths with a review reminder
    - Refuses code for `humans-only` paths
-4. After generation: "Run `./scripts/verify-ci.sh`" appears in the output
+4. After generation: "Run `./clear/verify-ci.sh`" appears in the output
 
 ---
 
@@ -171,7 +171,7 @@ For complex multi-file changes, use Cursor Composer (Ctrl/Cmd + I):
 **verify-ci.sh not running:**
 - Cursor can run terminal commands if you enable it in Settings
 - Alternatively: bind a keyboard shortcut to terminal commands in VS Code-compatible keybindings
-- Or run manually: `Ctrl + \`` → `./scripts/verify-ci.sh`
+- Or run manually: `Ctrl + \`` → `./clear/verify-ci.sh`
 
 **`.cursorrules` vs `.cursor/rules/`:**
 - Cursor supports both. If you're on an older version, `.cursorrules` is the fallback

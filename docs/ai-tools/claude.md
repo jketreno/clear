@@ -34,7 +34,7 @@ Claude Code also reads `CLAUDE.md` from subdirectories when you're working in th
 # API Module Instructions
 
 All endpoints in this directory are in the `supervised` autonomy zone.
-Always follow templates/examples/skills/api-endpoint.md when creating new endpoints.
+Always follow clear/examples/skills/api-endpoint.md when creating new endpoints.
 Every endpoint must pass the architecture test in tests/architecture/api-rules.test.js.
 ```
 
@@ -152,13 +152,13 @@ For project-wide skills, add a reference in your `CLAUDE.md`:
 ## Skills
 
 When generating TypeScript types from Python models, follow:
-`templates/examples/skills/type-sync.md`
+`clear/examples/skills/type-sync.md`
 
 When the user says "update the protos", follow:
-`templates/examples/skills/proto-visualization.md`
+`clear/examples/skills/proto-visualization.md`
 
 When creating a new API endpoint, follow:
-`templates/examples/skills/api-endpoint.md`
+`clear/examples/skills/api-endpoint.md`
 ```
 
 Claude will read the skill file when it's relevant.
@@ -171,10 +171,10 @@ For skills that are invoked explicitly, create a `.claude/commands/` file:
 <!-- .claude/commands/sync-types.md -->
 # /project:sync-types
 
-When invoked, follow templates/examples/skills/type-sync.md exactly to regenerate
+When invoked, follow clear/examples/skills/type-sync.md exactly to regenerate
 TypeScript types from the Python Pydantic models in backend/models/api/.
 
-After regenerating, run ./scripts/verify-ci.sh to verify the type
+After regenerating, run ./clear/verify-ci.sh to verify the type
 compatibility test passes.
 ```
 
@@ -197,18 +197,18 @@ When running multi-agent pipelines (orchestrator + sub-agents, parallel code gen
 
 | MCP Tool | Maps to | Description |
 |----------|---------|-------------|
-| `clear_verify` | `./scripts/verify-ci.sh` | Run all CI checks; returns structured pass/fail + error list |
+| `clear_verify` | `./clear/verify-ci.sh` | Run all CI checks; returns structured pass/fail + error list |
 | `clear_check_autonomy` | `clear/autonomy.yml` lookup | Returns autonomy level for a given file path |
 | `clear_list_humans_only` | `clear/autonomy.yml` filter | Lists all `humans-only` paths — safe to call before any batch operation |
 
 ### Setting up a CLEAR MCP server
 
-Use the skill template at `templates/skills/mcp-server.md` to generate a minimal MCP server that exposes these tools for your project:
+Use the skill template at `clear/templates/skills/mcp-server.md` to generate a minimal MCP server that exposes these tools for your project:
 
 ```
-Follow templates/skills/mcp-server.md to scaffold a CLEAR MCP server
+Follow clear/templates/skills/mcp-server.md to scaffold a CLEAR MCP server
 for this project. The server should expose:
-- clear_verify (runs scripts/verify-ci.sh)
+- clear_verify (runs clear/verify-ci.sh)
 - clear_check_autonomy (reads clear/autonomy.yml)
 - clear_list_humans_only (filters humans-only paths)
 ```
@@ -242,4 +242,4 @@ See [docs/agentic.md](../agentic.md) for a complete guide on using CLEAR with mu
 
 **verify-ci.sh operation fails:**
 - Claude needs permission to run terminal commands
-- If working in restricted mode: manually run `./scripts/verify-ci.sh` and paste the output to Claude
+- If working in restricted mode: manually run `./clear/verify-ci.sh` and paste the output to Claude

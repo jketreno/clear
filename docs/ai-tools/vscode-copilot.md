@@ -36,7 +36,7 @@ applyTo: "src/api/**"
 ---
 # API Development Rules
 All endpoints must include rate limiting, authentication, and input validation.
-Follow templates/examples/skills/api-endpoint.md for the complete template.
+Follow clear/examples/skills/api-endpoint.md for the complete template.
 ```
 
 ### Enable Instruction Files
@@ -58,7 +58,7 @@ CLEAR adds tasks to `Ctrl/Cmd + Shift + P` → "Tasks: Run Task":
 
 | Task | Shortcut | What it does |
 |------|---------|-------------|
-| **CLEAR: Verify CI** | Default test task | Runs `./scripts/verify-ci.sh` |
+| **CLEAR: Verify CI** | Default test task | Runs `./clear/verify-ci.sh` |
 | **CLEAR: Verify CI (fast)** | — | Skips architecture tests |
 | **CLEAR: Verify CI (fix)** | — | Auto-fixes lint issues |
 | **CLEAR: Setup** | — | Runs the setup wizard |
@@ -113,7 +113,7 @@ Copilot (reads copilot-instructions.md):
 ```
 You: Why is my architecture test failing?
 
-Copilot: Runs ./scripts/verify-ci.sh --fast, reads output, diagnoses failure.
+Copilot: Runs ./clear/verify-ci.sh --fast, reads output, diagnoses failure.
 ```
 
 ---
@@ -129,13 +129,13 @@ Skill files are instruction files that activate for specific patterns. Place the
 .github/instructions/db-migrations.instructions.md  # applyTo: migrations/**
 ```
 
-Copy the content from `templates/skills/` and add the `applyTo` frontmatter:
+Copy the content from `clear/templates/skills/` and add the `applyTo` frontmatter:
 
 ```markdown
 ---
 applyTo: "backend/models/api/**"
 ---
-# [Contents of templates/examples/skills/type-sync.md]
+# [Contents of clear/examples/skills/type-sync.md]
 ```
 
 ---
@@ -152,7 +152,7 @@ applyTo: "backend/models/api/**"
 - The architecture test in `autonomy-guard.test.js` provides mechanical enforcement
 
 **verify-ci.sh not found:**
-- Run `chmod +x scripts/verify-ci.sh && chmod +x scripts/clear-installer.sh`
+- Run `chmod +x clear/verify-ci.sh && chmod +x scripts/clear-installer.sh`
 - Make sure you're running from the project root
 
 **VS Code task "CLEAR: Verify CI" doesn't appear:**

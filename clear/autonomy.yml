@@ -24,11 +24,12 @@ project: "clear"
 
 modules:
   # ── Full Autonomy ──────────────────────────────────────────────────────────
-  # Starter material and patterns that are safe to extend or regenerate.
+  # Install artifacts — templates, examples, and configs that are safe to
+  # extend or regenerate, including install/**/verify-ci.sh.
 
-  - path: "templates"
+  - path: "install"
     level: full-autonomy
-    reason: "Copy-paste templates, skills, and example tests — intended to be adapted freely, including templates/**/verify-ci.sh"
+    reason: "Install artifacts — templates, skills, examples, and agent configs intended to be adapted freely"
 
   # ── Supervised ─────────────────────────────────────────────────────────────
   # Framework behavior and published docs; AI may draft, humans should review.
@@ -123,3 +124,8 @@ sources_of_truth:
     source_of_truth: "docs/agentic.md"
     defined_in: "docs/agentic.md"
     note: "Canonical patterns for orchestrators, sub-agents, and MCP tool integration"
+
+  - concept: "Installed file layout"
+    source_of_truth: "install/"
+    defined_in: "install/ directory tree"
+    note: "The install/ directory defines what gets installed into target projects; scripts/clear-installer.sh reads from it"

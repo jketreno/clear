@@ -9,9 +9,9 @@
 
 Rules exist in code and tests, not in code review comments or docs.
 
-**Mechanism:** `scripts/verify-ci.sh` runs before any work is marked complete.  
+**Mechanism:** `clear/verify-ci.sh` runs before any work is marked complete.  
 **Implementation:** Architecture tests, linters, type checkers, build validation.  
-**AI rule:** Never report work as complete if `./scripts/verify-ci.sh` fails.
+**AI rule:** Never report work as complete if `./clear/verify-ci.sh` fails.
 
 ---
 
@@ -70,7 +70,7 @@ AI checks clear/principles.md for applicable rules
   ↓
 AI generates code following constraints
   ↓
-AI runs ./scripts/verify-ci.sh
+AI runs ./clear/verify-ci.sh
   ↓
 If fails → AI fixes and reruns
   ↓
@@ -85,11 +85,11 @@ You: review the diff, then commit
 CLEAR principles apply equally to orchestrated multi-agent pipelines. Key rules:
 
 - **Orchestrators:** check `clear/autonomy.yml` before delegating any subtask; never delegate a `humans-only` path
-- **Sub-agents:** run `./scripts/verify-ci.sh` before reporting a subtask complete, regardless of AI provider
+- **Sub-agents:** run `./clear/verify-ci.sh` before reporting a subtask complete, regardless of AI provider
 - **Headless agents:** read `clear/autonomy.yml` at startup; exit non-zero if verification fails — let CI catch it
 - **MCP:** expose `verify-ci.sh` and `autonomy.yml` as MCP tools (`clear_verify`, `clear_check_autonomy`) for structured agent access
 
-See [docs/agentic.md](../docs/agentic.md) for full patterns and the `templates/skills/mcp-server.md` skill to scaffold a CLEAR MCP server.
+See [docs/agentic.md](../docs/agentic.md) for full patterns and the `clear/templates/skills/mcp-server.md` skill to scaffold a CLEAR MCP server.
 
 ---
 
@@ -99,18 +99,16 @@ See [docs/agentic.md](../docs/agentic.md) for full patterns and the `templates/s
 |------|---------|
 | `clear/autonomy.yml` | Module autonomy boundaries + sources of truth |
 | `clear/principles.md` | This file — AI quick reference |
-| `scripts/verify-ci.sh` | Local CI/CD enforcement — CLEAR-owned, auto-updated |
-| `scripts/verify-local.sh` | Project-specific checks — yours to edit |
-| `scripts/clear-installer.sh` | Unified install/update/setup entrypoint for new projects |
-| `templates/architecture-tests/` | Generic architecture tests (autonomy guard) |
-| `templates/examples/architecture-tests/` | Domain-specific test examples (API rules, type sync, module boundaries) |
-| `templates/skills/` | Generic AI skills (MCP server, code review) |
-| `templates/examples/skills/` | Domain-specific skill illustrations (copy and customize) |
-| `templates/github-actions/` | CI/CD workflow templates |
-| `templates/linting/` | ESLint config templates |
-| `docs/` | Detailed documentation per principle and AI tool |
+| `clear/verify-ci.sh` | Local CI/CD enforcement — CLEAR-owned, auto-updated |
+| `clear/verify-local.sh` | Project-specific checks — yours to edit |
+| `clear/templates/architecture-tests/` | Generic architecture tests (autonomy guard) |
+| `clear/examples/architecture-tests/` | Domain-specific test examples (API rules, type sync, module boundaries) |
+| `clear/templates/skills/` | Generic AI skills (MCP server, code review) |
+| `clear/examples/skills/` | Domain-specific skill illustrations (copy and customize) |
+| `clear/templates/github-actions/` | CI/CD workflow templates |
+| `clear/templates/linting/` | ESLint config templates |
+| `clear/docs/agentic.md` | Multi-agent pipelines and MCP integration guide |
 | `.github/copilot-instructions.md` | GitHub Copilot / VS Code workspace config |
 | `CLAUDE.md` | Claude Code configuration (auto-read at startup) |
 | `.cursor/rules/` | Cursor AI rules (MDC format) |
-| `docs/agentic.md` | Multi-agent pipelines and MCP integration guide |
-| `templates/skills/mcp-server.md` | Skill to scaffold a CLEAR MCP server |
+| `clear/templates/skills/mcp-server.md` | Skill to scaffold a CLEAR MCP server |
