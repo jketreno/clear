@@ -598,6 +598,7 @@ copy_item() {
 
   # Destination does not exist — copy freely
   if [[ "$DRY_RUN" == false ]]; then
+    mkdir -p "$(dirname "$dst")"
     if [[ "$kind" == "dir" ]]; then
       cp -r "$src" "$dst"
     else
