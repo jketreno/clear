@@ -1,69 +1,117 @@
 ---
 name: release
-description: "Create a signed CLEAR release artifact set, tag code, and publish to GitHub Releases (repo-local workflow)."
+description: "Prepare release collateral by auditing docs, updating CHANGELOG, and committing/pushing changes; hand off publish to human due signing passphrase."
 mode: agent
 ---
 
-# CLEAR Repo Skill: Make a Release
+# CLEAR Repo Skill: Prepare a Release
 
-Use this skill when a user asks to "make a release", "cut a release", or "publish a version" for this repository.
+Use this skill when a user asks to prepare or cut a release for this repository.
+This skill does not publish the release directly.
 
 ## Non-negotiables
 
 1. Git tree must be clean before starting.
 2. Release must run from `main`.
-3. `./scripts/verify-ci.sh` must pass unless `--skip-verify` was explicitly requested as break-glass.
-4. Release must include installer, checksum, and detached checksum signature.
-5. Do not claim release complete until `gh release create` succeeds.
-6. After publishing, update README's "CLEAR in 60 Seconds" version block by replacing only the content between:
+3. `./scripts/verify-ci.sh` must pass before handoff.
+4. Before release prep, audit docs for command/flag accuracy by inspecting scripts.
+5. If docs and implementation disagree, abort prep and report a mismatch summary.
+6. Update release collateral, then stage, commit, and push before handoff.
+7. Do not run `./scripts/release.sh` automatically because signing requires manual passphrase entry.
+8. Update README release version block by replacing only the content between:
    - `<!-- RELEASE_VERSION_START -->`
    - `<!-- RELEASE_VERSION_END -->`
-7. The updated block must include:
+9. The updated block must include:
    - the new version label `vX.Y.Z`
    - a link to `https://github.com/jketreno/clear/releases/tag/vX.Y.Z`
-   - minimal install commands with exact installer filename for that version
+   - install commands with exact installer filename for that version
 
-## Command
+## Phase 1: Preflight + Accuracy Audit
 
-```bash
-./scripts/release.sh --yes
-```
-
-Optional explicit version:
+Run:
 
 ```bash
-./scripts/release.sh --version 1.2.3 --yes
+git status --porcelain
+git branch --show-current
+./scripts/verify-ci.sh
 ```
 
-Dry run:
+Inspect script capabilities and compare with README/docs references:
 
 ```bash
-./scripts/release.sh --dry-run
+./scripts/release.sh --help
+./scripts/bootstrap-project.sh --help
 ```
 
-## Required output checks
+Verify README and all files under `docs/` only reference supported commands and flags.
 
-1. Tag exists: `vX.Y.Z`
-2. GitHub release exists: `vX.Y.Z`
-3. Assets uploaded:
-   - `clear-installer-vX.Y.Z.sh`
-   - `clear-installer-vX.Y.Z.sha256`
-   - `clear-installer-vX.Y.Z.sha256.asc`
-4. README content between `RELEASE_VERSION_START` and `RELEASE_VERSION_END` is updated to `vX.Y.Z`.
+Abort criteria:
+- Any command in README/docs uses unsupported script flags
+- Any release instructions refer to removed scripts
+- Any required prerequisites are outdated or missing
 
-## README tagged block template (post-release)
+If aborting, provide a concise mismatch summary with file paths and exact incorrect command snippets.
+
+## Phase 2: Changelog Update
+
+Determine the release baseline:
+
+```bash
+LAST_TAG="$(git tag -l 'v*' --sort=-version:refname --merged HEAD | head -1)"
+```
+
+If `LAST_TAG` exists, summarize user-relevant changes from `LAST_TAG..HEAD`.
+If no tag exists, summarize user-relevant changes from repo start.
+
+Update `CHANGELOG.md` with:
+- new release heading `vX.Y.Z`
+- concise user-facing summary of features/fixes/behavior changes
+- no internal-only noise unless it affects users
+
+## Phase 3: Release Collateral Commit
+
+Update release collateral files as needed, including:
+- `CHANGELOG.md`
+- `README.md` release marker block
+- any docs touched during audit corrections
+
+Then stage and commit:
+
+```bash
+git add CHANGELOG.md README.md docs/
+git commit -m "chore(release): prepare vX.Y.Z collateral"
+git push origin main
+```
+
+## Phase 4: Human Publish Handoff
+
+After push, instruct the user to run release publish manually:
+
+```bash
+./scripts/release.sh --version X.Y.Z --yes
+```
+
+Explain that this manual step is required because GPG passphrase entry cannot be automated reliably.
+
+## Required output checks (prep mode)
+
+1. Docs/script audit passed (or aborted with mismatch summary)
+2. `CHANGELOG.md` updated from last tag (or repo start)
+3. Release collateral committed and pushed
+4. Clear handoff command provided for manual publish
+
+## README tagged block template (collateral prep)
 
 Replace only the content between the tag markers with:
 
 ~~~markdown
 <!-- RELEASE_VERSION_START -->
-**Install the latest release (vX.Y.Z):**
-
-[Download CLEAR vX.Y.Z](https://github.com/jketreno/clear/releases/tag/vX.Y.Z)
+**Latest release: [vX.Y.Z](https://github.com/jketreno/clear/releases/tag/vX.Y.Z)**
 
 ```bash
 curl -fsSLO https://github.com/jketreno/clear/releases/download/vX.Y.Z/clear-installer-vX.Y.Z.sh
-bash clear-installer-vX.Y.Z.sh --target /path/to/your-project
+chmod +x ./clear-installer-vX.Y.Z.sh
+./clear-installer-vX.Y.Z.sh --target /path/to/your-project
 ```
 <!-- RELEASE_VERSION_END -->
 ~~~

@@ -115,10 +115,12 @@ For complex changes (new feature, refactor, new domain concept), use PLAN mode f
 
 When asked to cut or publish a release, use the repo-local release skill in `.github/skills/release.md` and the repository prompt in `.github/prompts/release.prompt.md`.
 
-After each successful release publication, update README's "CLEAR in 60 Seconds" section to:
-- replace only content between `<!-- RELEASE_VERSION_START -->` and `<!-- RELEASE_VERSION_END -->`
-- set the version label and release link to the new tag `vX.Y.Z`
-- include minimal installer commands using exact installer filename for that version
+Release workflow policy:
+- Before release prep, audit `README.md` and all `docs/` content against script behavior by code inspection.
+- If docs are inaccurate, abort release prep and report mismatches.
+- During release prep, update `CHANGELOG.md` from last release tag (or repo start), stage collateral updates, commit, and push.
+- Publishing is manual: user runs `./scripts/release.sh --version X.Y.Z --yes` and enters signing passphrase.
+- Update only content between `<!-- RELEASE_VERSION_START -->` and `<!-- RELEASE_VERSION_END -->` in README Quick Start with new version/link/installer command.
 
 ## Repository Layout
 
