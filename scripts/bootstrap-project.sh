@@ -341,6 +341,27 @@ if [[ "$UPDATE_MODE" == true ]]; then
     CURRENT+=("clear/extensions.yml")
   fi
 
+  # 4b) autonomy.yml create-if-missing (project-owned)
+  if [[ ! -f "$TARGET_DIR/clear/autonomy.yml" ]]; then
+    local_src="$CLEAR_ROOT/templates/agent-configs/clear/autonomy.yml"
+    if [[ -f "$local_src" ]]; then
+      if [[ "$DRY_RUN" == false ]]; then
+        mkdir -p "$TARGET_DIR/clear"
+        cp "$local_src" "$TARGET_DIR/clear/autonomy.yml"
+        echo -e "  ${GREEN}Created ${RESET}: clear/autonomy.yml (project-owned — customize boundaries for your codebase)"
+      else
+        echo -e "  ${CYAN}Would create${RESET}: clear/autonomy.yml"
+      fi
+      UPDATED+=("clear/autonomy.yml")
+    fi
+  else
+    echo -e "  ${CYAN}Kept    ${RESET}: clear/autonomy.yml (project-owned)"
+    CURRENT+=("clear/autonomy.yml")
+  fi
+
+  # 4c) principles.md (CLEAR-owned)
+  update_file "$CLEAR_ROOT/clear/principles.md" "$TARGET_DIR/clear/principles.md"
+
   # 5) Installed skills in .github/prompts
   header "Skills..."
   SKILLS_FOUND=0
@@ -507,7 +528,7 @@ fi
 # the configs the CLEAR project itself uses when developing this seed repo.
 declare -a COPY_ITEMS=(
   "scripts                          scripts        dir"
-  "clear                            clear          dir"
+  "clear/principles.md              clear/principles.md file"
   "templates/agent-configs/.github  .github        dir"
   "templates/agent-configs/.cursor  .cursor        dir"
   "templates/agent-configs/.claude  .claude        dir"
@@ -521,6 +542,7 @@ declare -a COPY_ITEMS=(
 # verify-ci.sh is CLEAR-owned: always copied via the scripts/ dir above.
 declare -a COPY_IF_MISSING=(
   "templates/agent-configs/scripts/verify-local.sh  scripts/verify-local.sh"
+  "templates/agent-configs/clear/autonomy.yml       clear/autonomy.yml"
   "clear/extensions.yml                             clear/extensions.yml"
 )
 

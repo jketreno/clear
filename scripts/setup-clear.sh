@@ -164,6 +164,54 @@ add_autonomy_entry() {
   return 0
 }
 
+sync_autonomy_project_name() {
+  local autonomy_file="$1"
+  local selected_project_name="$2"
+  local escaped_project_name tmp_file
+
+  [[ -f "$autonomy_file" ]] || return 0
+
+  escaped_project_name="${selected_project_name//\"/\\\"}"
+  tmp_file="$(mktemp)"
+
+  awk -v project_name="$escaped_project_name" '
+    BEGIN {
+      replaced = 0
+      inserted = 0
+    }
+    /^[[:space:]]*project:[[:space:]]*/ {
+      if (replaced == 0) {
+        print "project: \"" project_name "\""
+        replaced = 1
+      }
+      next
+    }
+    /^[[:space:]]*modules:[[:space:]]*$/ {
+      if (replaced == 0 && inserted == 0) {
+        print "project: \"" project_name "\""
+        print ""
+        inserted = 1
+      }
+      print
+      next
+    }
+    { print }
+    END {
+      if (replaced == 0 && inserted == 0) {
+        print ""
+        print "project: \"" project_name "\""
+      }
+    }
+  ' "$autonomy_file" >"$tmp_file"
+
+  if ! cmp -s "$autonomy_file" "$tmp_file"; then
+    mv "$tmp_file" "$autonomy_file"
+    info "Synced project name in clear/autonomy.yml: $selected_project_name"
+  else
+    rm -f "$tmp_file"
+  fi
+}
+
 if ask_yn "Use autonomy-bootstrap skill to generate clear/autonomy.yml after setup?" "y"; then
   USE_AUTONOMY_SKILL=true
   mkdir -p "$PROJECT_ROOT/clear"
@@ -245,6 +293,8 @@ AUTONOMY_EOF
 
   success "Created clear/autonomy.yml"
 fi
+
+sync_autonomy_project_name "$PROJECT_ROOT/clear/autonomy.yml" "$PROJECT_NAME"
 
 # ─── Step 3: Source of truth ──────────────────────────────────────────────────
 
@@ -448,9 +498,12 @@ if [[ "$USE_AUTONOMY_SKILL" == true ]]; then
 
   echo ""
   info "Next: open your AI assistant (Cursor, Copilot Chat, Claude, etc.)"
-  info "and run /autonomy-bootstrap to generate project-specific autonomy rules."
-  info "If slash commands are unavailable, open .github/prompts/autonomy-bootstrap.prompt.md"
-  info "and paste it into chat."
+  info "and paste this message to generate project-specific autonomy rules:"
+  info "Analyze this repository and create clear/autonomy.yml for CLEAR."
+  info "Include module boundaries with path, level (full-autonomy/supervised/humans-only),"
+  info "and reason for each entry, ending with a wildcard default. Also add 3-8"
+  info "sources_of_truth entries (concept, source_of_truth, defined_in, note)."
+  info "Then validate the YAML and show the proposed file content."
 fi
 
 # ── Example skills (domain-specific, need customization)
@@ -492,15 +545,17 @@ if [[ -f "$EXTENSIONS_FILE" ]]; then
   # Parse extension names and descriptions from extensions.yml
   EXT_NAMES=()
   EXT_DESCS=()
+  EXT_CMDS=()
   EXT_HINTS=()
   EXT_URLS=()
-  local_name="" local_desc="" local_hint="" local_url=""
+  local_name="" local_desc="" local_cmd="" local_hint="" local_url=""
 
   while IFS= read -r line; do
     if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*name:[[:space:]]*(.*) ]]; then
       if [[ -n "$local_name" ]]; then
         EXT_NAMES+=("$local_name")
         EXT_DESCS+=("$local_desc")
+        EXT_CMDS+=("$local_cmd")
         EXT_HINTS+=("$local_hint")
         EXT_URLS+=("$local_url")
       fi
@@ -508,12 +563,17 @@ if [[ -f "$EXTENSIONS_FILE" ]]; then
       local_name="${local_name#\"}"
       local_name="${local_name%\"}"
       local_desc=""
+      local_cmd=""
       local_hint=""
       local_url=""
     elif [[ "$line" =~ ^[[:space:]]*description:[[:space:]]*(.*) ]]; then
       local_desc="${BASH_REMATCH[1]}"
       local_desc="${local_desc#\"}"
       local_desc="${local_desc%\"}"
+    elif [[ "$line" =~ ^[[:space:]]*command:[[:space:]]*(.*) ]]; then
+      local_cmd="${BASH_REMATCH[1]}"
+      local_cmd="${local_cmd#\"}"
+      local_cmd="${local_cmd%\"}"
     elif [[ "$line" =~ ^[[:space:]]*install_hint:[[:space:]]*(.*) ]]; then
       local_hint="${BASH_REMATCH[1]}"
       local_hint="${local_hint#\"}"
@@ -528,6 +588,7 @@ if [[ -f "$EXTENSIONS_FILE" ]]; then
   if [[ -n "$local_name" ]]; then
     EXT_NAMES+=("$local_name")
     EXT_DESCS+=("$local_desc")
+    EXT_CMDS+=("$local_cmd")
     EXT_HINTS+=("$local_hint")
     EXT_URLS+=("$local_url")
   fi
@@ -544,17 +605,17 @@ if [[ -f "$EXTENSIONS_FILE" ]]; then
   echo ""
 
   if [[ -n "$EXT_SELECTION" ]]; then
-    ENABLE_EXTS=()
+    ENABLE_IDX=()
     if [[ "$EXT_SELECTION" == "all" ]]; then
       for _i in "${!EXT_NAMES[@]}"; do
-        ENABLE_EXTS+=("${EXT_NAMES[$_i]}")
+        ENABLE_IDX+=("$_i")
       done
     else
       for _token in $EXT_SELECTION; do
         if [[ "$_token" =~ ^[0-9]+$ ]]; then
           _idx=$((_token - 1))
           if [[ $_idx -ge 0 && $_idx -lt ${#EXT_NAMES[@]} ]]; then
-            ENABLE_EXTS+=("${EXT_NAMES[$_idx]}")
+            ENABLE_IDX+=("$_idx")
           else
             warn "No extension at position $_token — skipped"
           fi
@@ -562,15 +623,19 @@ if [[ -f "$EXTENSIONS_FILE" ]]; then
       done
     fi
 
-    for _ext in "${ENABLE_EXTS[@]}"; do
-      # Check if tool is available before enabling
-      if command -v "$_ext" &>/dev/null; then
+    for _idx in "${ENABLE_IDX[@]}"; do
+      _ext="${EXT_NAMES[$_idx]}"
+      _cmd="${EXT_CMDS[$_idx]:-$_ext}"
+      _hint="${EXT_HINTS[$_idx]:-check the extensions.yml for install instructions}"
+
+      # Built-in extensions do not require installation.
+      if [[ "${_hint,,}" == *"built-in"* ]] || command -v "$_cmd" &>/dev/null; then
         # Toggle enabled: false → enabled: true in extensions.yml
         sed -i "/name:[[:space:]]*${_ext}/,/enabled:/{s/enabled:[[:space:]]*false/enabled: true/}" "$EXTENSIONS_FILE"
         success "Enabled extension: $_ext"
       else
         warn "$_ext is not installed. Enable anyway?"
-        echo "  Install with: ${EXT_HINTS[$_i]:-check the extensions.yml for install instructions}"
+        echo "  Install with: $_hint"
         echo ""
         if ask_yn "  Enable $_ext without installing? (verify-ci.sh will remind you)" "n"; then
           sed -i "/name:[[:space:]]*${_ext}/,/enabled:/{s/enabled:[[:space:]]*false/enabled: true/}" "$EXTENSIONS_FILE"
@@ -618,9 +683,14 @@ fi
 echo ""
 echo "Next steps:"
 echo "  1. Open your AI assistant (Cursor, Copilot Chat, Claude, etc.)"
-echo "     and run the installed skill (for example: /autonomy-bootstrap)."
-echo "     If slash commands are unavailable, open .github/prompts/*.prompt.md"
-echo "     and paste the instructions into chat."
+echo "     and paste this message:"
+echo ""
+echo "     Analyze this repository and create clear/autonomy.yml for CLEAR."
+echo "     Include module boundaries with path, level (full-autonomy/supervised/humans-only),"
+echo "     and reason for each entry, ending with a wildcard default. Also add 3-8"
+echo "     sources_of_truth entries (concept, source_of_truth, defined_in, note)."
+echo "     Then validate the YAML and show the proposed file content."
+echo ""
 echo "  2. Review clear/autonomy.yml and adjust boundaries for your codebase"
 echo "  3. Open scripts/verify-local.sh and add your project-specific checks"
 echo "  4. Run ./scripts/verify-ci.sh to see which checks pass/fail today"
