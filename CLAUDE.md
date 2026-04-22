@@ -4,12 +4,12 @@ This project uses the **CLEAR** framework for AI-assisted development.
 
 ## Non-Negotiable Rule
 
-After any file edit (create/update/delete), run `./scripts/verify-ci.sh`.
+After any file edit (create/update/delete), run `./clear/verify-ci.sh`.
 
 ```bash
-./scripts/verify-ci.sh        # Full check
-./scripts/verify-ci.sh --fast # Skip slow architecture tests
-./scripts/verify-ci.sh --fix  # Auto-fix lint issues
+./clear/verify-ci.sh        # Full check
+./clear/verify-ci.sh --fast # Skip slow architecture tests
+./clear/verify-ci.sh --fix  # Auto-fix lint issues
 ```
 
 If it fails → fix the issues → run again → repeat until exit code 0.
@@ -21,7 +21,7 @@ Before sending a final response for an implementation task, include:
 
 If running in read-only mode (Ask mode), explicitly state: "verify-ci.sh not run because session is read-only."
 
-Rules guide behavior; CI enforces it. `./scripts/verify-ci.sh` is the source of truth.
+Rules guide behavior; CI enforces it. `./clear/verify-ci.sh` is the source of truth.
 
 ---
 
@@ -55,7 +55,7 @@ Fill in the actual values by reading the files. Show this block **once per sessi
 
 **Before modifying any file**, look up its path in `clear/autonomy.yml`:
 
-Scope note for this repository: `humans-only` for `scripts/verify-ci.sh` applies only to the repository root path. Files under `install/` (including `install/**/verify-ci.sh`) follow the `install` boundary and are editable.
+Scope note for this repository: `humans-only` for `clear/verify-ci.sh` applies only to the repository root path. Files under `install/` (including `install/**/verify-ci.sh`) follow the `install` boundary and are editable.
 
 | Level | What to do |
 |-------|-----------|
@@ -70,7 +70,7 @@ Scope note for this repository: `humans-only` for `scripts/verify-ci.sh` applies
 ```
 Generate/modify code
        ↓
-Run ./scripts/verify-ci.sh
+Run ./clear/verify-ci.sh
        ↓
 PASS? → Report verify-ci status (PASS), command used, and flags used
     Then summarize files changed and remind to commit
@@ -78,7 +78,7 @@ PASS? → Report verify-ci status (PASS), command used, and flags used
        ↓
 FAIL? → Read error output
       → Fix the specific failures
-      → Run ./scripts/verify-ci.sh again
+      → Run ./clear/verify-ci.sh again
       → Loop until passing
 ```
 
@@ -152,8 +152,8 @@ Wait for approval before writing code.
 | `clear/autonomy.yml` | Autonomy boundaries + sources of truth |
 | `clear/extensions.yml` | Optional tool extensions (Lizard, etc.) — project-owned |
 | `clear/principles.md` | Five CLEAR principles quick reference |
-| `scripts/verify-ci.sh` | Root CI enforcement script — run before completing work (CLEAR-owned) |
-| `scripts/verify-local.sh` | Project-specific checks — add your checks here |
+| `clear/verify-ci.sh` | Root CI enforcement script — run before completing work (CLEAR-owned) |
+| `clear/verify-local.sh` | Project-specific checks — add your checks here |
 | `scripts/clear-installer.sh` | One-time install/update/setup entrypoint |
 | `install/` | Everything that gets installed into target projects |
 | `install/clear/templates/` | Generic templates (architecture tests, skills, linting, CI, git hooks) |
@@ -168,9 +168,9 @@ Wait for approval before writing code.
 
 ```bash
 # Verification
-./scripts/verify-ci.sh             # Full CI check
-./scripts/verify-ci.sh --fast      # Skip architecture tests
-./scripts/verify-ci.sh --fix       # Auto-fix lint
+./clear/verify-ci.sh             # Full CI check
+./clear/verify-ci.sh --fast      # Skip architecture tests
+./clear/verify-ci.sh --fix       # Auto-fix lint
 
 # Setup
 ./scripts/clear-installer.sh --target .   # Interactive install/update/setup

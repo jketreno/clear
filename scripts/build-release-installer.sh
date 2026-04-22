@@ -84,6 +84,7 @@ cp "$PROJECT_ROOT/scripts/clear-installer.sh" "$PAYLOAD_DIR/scripts/clear-instal
 mkdir -p "$PAYLOAD_DIR/clear"
 cp "$PROJECT_ROOT/clear/principles.md" "$PAYLOAD_DIR/clear/principles.md"
 cp "$PROJECT_ROOT/clear/extensions.yml" "$PAYLOAD_DIR/clear/extensions.yml"
+cp "$PROJECT_ROOT/clear/verify-ci.sh" "$PAYLOAD_DIR/clear/verify-ci.sh"
 cp -R "$PROJECT_ROOT/install" "$PAYLOAD_DIR/install"
 cp -R "$PROJECT_ROOT/docs" "$PAYLOAD_DIR/docs"
 cp "$PROJECT_ROOT/README.md" "$PAYLOAD_DIR/README.md"

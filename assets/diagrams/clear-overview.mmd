@@ -11,7 +11,7 @@ flowchart TD
 
     GEN --> VCI
 
-    subgraph VCI["scripts/verify-ci.sh"]
+    subgraph VCI["clear/verify-ci.sh"]
         direction LR
         B[Build] --> L[Lint] --> T[Tests] --> A["Architecture<br/>Tests"] --> G["Autonomy<br/>Guard"]
     end

@@ -13,7 +13,7 @@ This skill does not publish the release directly.
 
 1. Git tree must be clean before starting.
 2. Release must run from `main`.
-3. `./scripts/verify-ci.sh` must pass before handoff.
+3. `./clear/verify-ci.sh` must pass before handoff.
 4. Before release prep, audit docs for command/flag accuracy by inspecting scripts.
 5. If docs and implementation disagree, abort prep and report a mismatch summary.
 6. Update release collateral, then stage, commit, and push before handoff.
@@ -33,7 +33,7 @@ Run:
 ```bash
 git status --porcelain
 git branch --show-current
-./scripts/verify-ci.sh
+./clear/verify-ci.sh
 ```
 
 Inspect script capabilities and compare with README/docs references:

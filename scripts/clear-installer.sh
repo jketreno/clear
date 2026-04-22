@@ -773,7 +773,7 @@ else
 fi
 
 # CLEAR-managed files (always updated)
-copy_file_update "$SOURCE_ROOT/install/clear/verify-ci.sh" "$TARGET_DIR/clear/verify-ci.sh"
+copy_file_update "$SOURCE_ROOT/clear/verify-ci.sh" "$TARGET_DIR/clear/verify-ci.sh"
 copy_file_update "$SOURCE_ROOT/clear/principles.md" "$TARGET_DIR/clear/principles.md"
 copy_dir_update "$SOURCE_ROOT/install/.github" "$TARGET_DIR/.github" "prompts"
 copy_dir_update "$SOURCE_ROOT/install/.cursor" "$TARGET_DIR/.cursor"

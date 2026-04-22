@@ -48,5 +48,5 @@ Respond with:
 
 When creating a new generated file type:
 1. Write a skill file in `install/clear/templates/skills/` documenting how to regenerate it
-2. Add the regeneration command to `scripts/verify-local.sh` (under build checks)
+2. Add the regeneration command to `clear/verify-local.sh` (under build checks)
 3. Add an architecture test that detects drift between source and generated output

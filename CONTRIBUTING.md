@@ -17,11 +17,11 @@ Thank you for your interest in CLEAR! This framework keeps architecture rules en
 ### Submit Pull Requests
 1. Fork the repo and create a feature branch
 2. Read `clear/autonomy.yml` — respect the autonomy boundaries
-3. Run `./scripts/verify-ci.sh` before submitting (the framework enforces its own rules)
+3. Run `./clear/verify-ci.sh` before submitting (the framework enforces its own rules)
 4. Keep PRs focused — one change per PR
 
 ### Improve Templates
-Templates in `templates/` are `full-autonomy` — feel free to:
+Templates in `install/clear/templates/` are `full-autonomy` — feel free to:
 - Add architecture test templates for new languages/frameworks
 - Create new skill files for common regeneration patterns
 - Improve linting configs
@@ -39,7 +39,7 @@ Docs are `supervised` — PRs welcome, but expect review before merge:
 git clone https://github.com/jketreno/clear
 cd clear
 # The seed repo is self-contained — no dependencies to install
-./scripts/verify-ci.sh  # Verify everything passes
+./clear/verify-ci.sh  # Verify everything passes
 ```
 
 ## Code of Conduct

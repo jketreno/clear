@@ -11,7 +11,7 @@ Use this command when asked to cut or publish a release.
    - replace only content between `<!-- RELEASE_VERSION_START -->` and `<!-- RELEASE_VERSION_END -->`
    - set version label + link to latest release tag
    - include minimal installer commands with exact `clear-installer-vX.Y.Z.sh` filename
-5. Run `./scripts/verify-ci.sh` before reporting complete.
+5. Run `./clear/verify-ci.sh` before reporting complete.
 
 ## Output format
 

@@ -13,7 +13,7 @@ If you're about to generate code that violates a rule, **stop and add the enforc
 
 1. Is there an ESLint rule / linter config that would catch this? If not, propose one.
 2. Is there an architecture test that would catch this? If not, propose one.
-3. Add the check to `scripts/verify-local.sh`.
+3. Add the check to `clear/verify-local.sh`.
 
 ## When to Add Architecture Tests
 
@@ -41,4 +41,4 @@ When generating code, suggest adding ESLint rules for:
 
 ## verify-local.sh Integration
 
-Any new constraint must be wired into `scripts/verify-local.sh` (not `verify-ci.sh`, which is CLEAR-owned). Use `run_check "Name" "command"` — all helpers are available from the parent script.
+Any new constraint must be wired into `clear/verify-local.sh` (not `verify-ci.sh`, which is CLEAR-owned). Use `run_check "Name" "command"` — all helpers are available from the parent script.

@@ -36,7 +36,7 @@ Break-glass only:
 ## What the release command does
 
 1. Verifies preflight conditions (branch, clean tree, tools, auth)
-2. Runs `./scripts/verify-ci.sh` unless `--skip-verify` is explicitly used
+2. Runs `./clear/verify-ci.sh` unless `--skip-verify` is explicitly used
 3. Builds installer + checksum + detached signature artifacts
 4. Creates and pushes `vX.Y.Z` tag
 5. Creates GitHub release and uploads artifacts

@@ -3,7 +3,7 @@
 This project uses the CLEAR framework. Detailed rules are in `.cursor/rules/`.
 
 ## Core Rule
-Always run `./scripts/verify-ci.sh` before marking work complete.
+Always run `./clear/verify-ci.sh` before marking work complete.
 
 ## Before Any File Change
 Check `clear/autonomy.yml` for the file path:

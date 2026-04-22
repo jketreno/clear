@@ -2,7 +2,7 @@
 # =============================================================================
 # verify-local.sh — Project-specific checks for CLEAR repository compliance
 # =============================================================================
-# This file is sourced by scripts/verify-ci.sh.
+# This file is sourced by clear/verify-ci.sh.
 # It enforces shell script quality gates that are project-owned:
 #   - shellcheck on tracked *.sh files
 #   - shfmt formatting check on tracked *.sh files
@@ -73,11 +73,11 @@ is_humans_only_match() {
 is_required_shell_check_path() {
   local rel_path="$1"
 
-  if [[ "$rel_path" == "scripts/verify-ci.sh" ]]; then
+  if [[ "$rel_path" == "clear/verify-ci.sh" ]]; then
     return 0
   fi
 
-  if [[ "$rel_path" =~ ^templates/.*/verify-ci\.sh$ ]]; then
+  if [[ "$rel_path" =~ ^install/.*/verify-ci\.sh$ ]]; then
     return 0
   fi
 

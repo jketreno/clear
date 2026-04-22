@@ -26,13 +26,13 @@ Fill in the bracketed values from the actual files. Show this block **once per c
 
 ## Core Rule: Never Mark Work Incomplete
 
-After any file edit (create/update/delete), run `./scripts/verify-ci.sh`.
+After any file edit (create/update/delete), run `./clear/verify-ci.sh`.
 
 - If it fails → fix the issues → run again → repeat until exit code 0
 - Never skip or bypass this script
 - Before sending a final response for an implementation task, include: verify-ci.sh result (PASS/FAIL), command used, and whether `--fast` or `--fix` was used (if applicable)
 - If running in read-only mode (Ask mode), explicitly state: "verify-ci.sh not run because session is read-only."
-- Rules guide behavior; CI enforces it. `./scripts/verify-ci.sh` is the source of truth
+- Rules guide behavior; CI enforces it. `./clear/verify-ci.sh` is the source of truth
 
 ## Autonomy Boundaries [L]
 
@@ -46,7 +46,7 @@ Before modifying any file, check `clear/autonomy.yml`:
 
 ## Enforced Rules [C]
 
-Your rules are enforced by `scripts/verify-ci.sh` (CLEAR-owned) and `scripts/verify-local.sh` (project-specific checks). The AI treats verify-ci.sh failures as blockers, not warnings. Common checks it runs:
+Your rules are enforced by `clear/verify-ci.sh` (CLEAR-owned) and `clear/verify-local.sh` (project-specific checks). The AI treats verify-ci.sh failures as blockers, not warnings. Common checks it runs:
 
 - Build (TypeScript compilation, no warnings)
 - Lint (ESLint, Prettier, Ruff, etc.)  
@@ -93,7 +93,7 @@ Before generating code for any domain concept, check `clear/autonomy.yml`'s `sou
 3. Read clear/principles.md — identify applicable constraints
 4. Check sources_of_truth for relevant domain concepts
 5. Generate code following all constraints
-6. Run ./scripts/verify-ci.sh
+6. Run ./clear/verify-ci.sh
 7. If fails: fix → rerun → repeat until passing
 8. Report verify-ci status (PASS/FAIL), command used, and flags used (`--fast`/`--fix` if any)
 9. Summarize files changed and remind user to commit
@@ -126,11 +126,12 @@ Release workflow policy:
 ## Repository Layout
 
 ```
-scripts/verify-ci.sh              — Run this. Always. (CLEAR-owned)
-scripts/verify-local.sh           — Project-specific checks (yours to edit)
-scripts/clear-installer.sh        — Install/update CLEAR into target projects
+clear/verify-ci.sh                — Run this. Always. (CLEAR-owned)
+clear/verify-local.sh             — Project-specific checks (yours to edit)
 clear/autonomy.yml                — Autonomy boundaries + sources of truth
 clear/principles.md               — This framework's quick reference
+scripts/clear-installer.sh        — Install/update CLEAR into target projects
+scripts/release.sh                — Build and publish releases
 install/                          — Everything installed into target projects
 install/clear/templates/           — Generic templates (architecture tests, skills, linting, CI)
 install/clear/examples/            — Domain-specific examples (architecture tests, skills)

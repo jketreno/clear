@@ -145,7 +145,7 @@ Usage: ./scripts/release.sh [options]
 Options:
   --version <semver>   Override VERSION file value
   --dry-run            Print actions without mutating git/GitHub
-  --skip-verify        Skip ./scripts/verify-ci.sh (break-glass)
+  --skip-verify        Skip ./clear/verify-ci.sh (break-glass)
   --yes                Auto-confirm interactive prompts
   --notes-file <path>  File to use for GitHub release notes
   --notes-template <path> Template file used when --notes-file is omitted
@@ -213,9 +213,9 @@ fi
 if [[ "$SKIP_VERIFY" != "true" ]]; then
   rl_info "Running verify-ci gate"
   if [[ "$DRY_RUN" == "true" ]]; then
-    echo "DRY_RUN: ./scripts/verify-ci.sh"
+    echo "DRY_RUN: ./clear/verify-ci.sh"
   else
-    ./scripts/verify-ci.sh
+    ./clear/verify-ci.sh
   fi
 fi
 

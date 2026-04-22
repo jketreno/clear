@@ -34,17 +34,9 @@ modules:
   # ── Supervised ─────────────────────────────────────────────────────────────
   # Framework behavior and published docs; AI may draft, humans should review.
 
-  - path: "scripts/verify-ci.sh"
-    level: supervised
-    reason: "CLEAR-owned enforcement script — changes are allowed but require human review"
-
-  - path: "scripts/verify-local.sh"
-    level: supervised
-    reason: "Project-specific checks — AI may draft, human reviews before commit"
-
   - path: "scripts"
     level: supervised
-    reason: "Bootstrap and verify scripts affect every adopter; review before release"
+    reason: "Build/release scripts affect every adopter; review before release"
 
   - path: "clear/extensions.yml"
     level: supervised
@@ -106,8 +98,8 @@ sources_of_truth:
     note: "If docs or AI configs disagree with this file, this file wins"
 
   - concept: "Local CI contract"
-    source_of_truth: "scripts/verify-ci.sh + scripts/verify-local.sh"
-    defined_in: "scripts/verify-ci.sh (CLEAR-owned), scripts/verify-local.sh (project-owned)"
+    source_of_truth: "clear/verify-ci.sh + clear/verify-local.sh"
+    defined_in: "clear/verify-ci.sh (CLEAR-owned), clear/verify-local.sh (project-owned)"
     note: "verify-ci.sh is the scaffolding; verify-local.sh holds project-specific checks"
 
   - concept: "Extension configuration"

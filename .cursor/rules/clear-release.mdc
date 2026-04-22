@@ -13,4 +13,4 @@ Use this rule when the user asks to cut or publish a release.
 2. Publish release artifacts (`.sh`, `.sha256`, `.sha256.asc`).
 3. After successful publish, update README "CLEAR in 60 Seconds" to the latest release tag.
 4. README must include exact copy/paste download commands and verification commands.
-5. Run `./scripts/verify-ci.sh` before reporting completion.
+5. Run `./clear/verify-ci.sh` before reporting completion.

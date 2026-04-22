@@ -12,6 +12,8 @@ CLEAR fixes this: define your rules as automated checks, tell the AI to run them
 
 Works with GitHub Copilot, Claude Code, Cursor, and MCP-compatible agent frameworks.
 
+Want to know the thought process that led to CLEAR's design? Read the [origin story](ORIGIN.md).
+
 ---
 
 ## Quick Start

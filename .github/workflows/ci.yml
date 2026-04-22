@@ -24,10 +24,12 @@ jobs:
           sudo apt-get install -y shellcheck shfmt
 
       - name: Make scripts executable
-        run: chmod +x scripts/*.sh
+        run: |
+          chmod +x clear/verify-ci.sh clear/verify-local.sh
+          chmod +x scripts/*.sh
 
       - name: CLEAR — Verify CI
-        run: ./scripts/verify-ci.sh
+        run: ./clear/verify-ci.sh
 
       - name: Shellcheck (scripts quality)
-        run: shellcheck --severity=error scripts/*.sh
+        run: shellcheck --severity=error scripts/*.sh clear/verify-ci.sh clear/verify-local.sh
