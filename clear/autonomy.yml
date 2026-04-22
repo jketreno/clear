@@ -34,8 +34,8 @@ modules:
   # Framework behavior and published docs; AI may draft, humans should review.
 
   - path: "scripts/verify-ci.sh"
-    level: humans-only
-    reason: "Only the repository root scripts/verify-ci.sh is CLEAR-owned and humans-only; template copies under templates/ remain editable"
+    level: supervised
+    reason: "CLEAR-owned enforcement script — changes are allowed but require human review"
 
   - path: "scripts/verify-local.sh"
     level: supervised

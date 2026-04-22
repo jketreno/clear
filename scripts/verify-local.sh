@@ -70,6 +70,20 @@ is_humans_only_match() {
   return 1
 }
 
+is_required_shell_check_path() {
+  local rel_path="$1"
+
+  if [[ "$rel_path" == "scripts/verify-ci.sh" ]]; then
+    return 0
+  fi
+
+  if [[ "$rel_path" =~ ^templates/.*/verify-ci\.sh$ ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
 run_shellcheck_check() {
   local -a abs_files=("$@")
 
@@ -203,7 +217,7 @@ collect_humans_only_paths humans_only_paths
 
 filtered_rel_files=()
 for rel_path in "${shell_rel_files[@]}"; do
-  if is_humans_only_match "$rel_path" "${humans_only_paths[@]}"; then
+  if is_humans_only_match "$rel_path" "${humans_only_paths[@]}" && ! is_required_shell_check_path "$rel_path"; then
     info "Skipping humans-only shell file: $rel_path"
     continue
   fi

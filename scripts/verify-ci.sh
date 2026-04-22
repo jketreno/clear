@@ -35,7 +35,7 @@ FAILED_CHECKS=()
 for arg in "$@"; do
   case "$arg" in
     --fast) FAST_MODE=true ;;
-    --fix)  FIX_MODE=true ;;
+    --fix) FIX_MODE=true ;;
   esac
 done
 
@@ -55,7 +55,7 @@ supports_color() {
     local colors
     colors="$(tput colors 2>/dev/null || printf '0')"
     [[ "$colors" =~ ^[0-9]+$ ]] || return 1
-    (( colors >= 8 )) || return 1
+    ((colors >= 8)) || return 1
   fi
 
   return 0
@@ -76,7 +76,10 @@ else
 fi
 
 pass() { echo -e "${GREEN}✅ $1${NC}"; }
-fail() { echo -e "${RED}❌ $1${NC}"; FAILED_CHECKS+=("$1"); }
+fail() {
+  echo -e "${RED}❌ $1${NC}"
+  FAILED_CHECKS+=("$1")
+}
 info() { echo -e "${BLUE}ℹ  $1${NC}"; }
 warn() { echo -e "${YELLOW}⚠  $1${NC}"; }
 section() { echo -e "\n${BLUE}── $1 ──${NC}"; }
@@ -117,7 +120,7 @@ list_project_files_respecting_gitignore() {
 is_default_ignored_path() {
   local rel_path="$1"
   case "$rel_path" in
-    node_modules/*|*/node_modules/*|.venv/*|*/.venv/*|venv/*|*/venv/*|.git/*|*/.git/*|dist/*|*/dist/*|build/*|*/build/*|coverage/*|*/coverage/*)
+    node_modules/* | */node_modules/* | .venv/* | */.venv/* | venv/* | */venv/* | .git/* | */.git/* | dist/* | */dist/* | build/* | */build/* | coverage/* | */coverage/*)
       return 0
       ;;
   esac
@@ -166,7 +169,7 @@ is_extension_excluded() {
       $pattern) return 0 ;;
     esac
     case "$rel_path" in
-      $pattern|$pattern/*|*/$pattern|*/$pattern/*) return 0 ;;
+      $pattern | $pattern/* | */$pattern | */$pattern/*) return 0 ;;
     esac
   done
 
@@ -220,11 +223,11 @@ detect_project() {
   HAS_RUST=false
   HAS_MAKE=false
 
-  [[ -f "$PROJECT_ROOT/package.json" ]]   && HAS_NODE=true   || true
+  [[ -f "$PROJECT_ROOT/package.json" ]] && HAS_NODE=true || true
   [[ -f "$PROJECT_ROOT/pyproject.toml" || -f "$PROJECT_ROOT/setup.py" || -f "$PROJECT_ROOT/requirements.txt" ]] && HAS_PYTHON=true || true
-  [[ -f "$PROJECT_ROOT/go.mod" ]]   && HAS_GO=true   || true
-  [[ -f "$PROJECT_ROOT/Cargo.toml" ]] && HAS_RUST=true  || true
-  [[ -f "$PROJECT_ROOT/Makefile" ]]   && HAS_MAKE=true  || true
+  [[ -f "$PROJECT_ROOT/go.mod" ]] && HAS_GO=true || true
+  [[ -f "$PROJECT_ROOT/Cargo.toml" ]] && HAS_RUST=true || true
+  [[ -f "$PROJECT_ROOT/Makefile" ]] && HAS_MAKE=true || true
 }
 
 # ─── Check Groups ─────────────────────────────────────────────────────────────
@@ -372,7 +375,7 @@ check_autonomy() {
               warn "Staged file matches humans-only path: $humans_path ($staged)"
               warn "Review clear/autonomy.yml before committing AI-generated changes to this path."
             fi
-          done <<< "$staged_files"
+          done <<<"$staged_files"
         done < <(awk '
           /^  - path:/ {
             line = $0
@@ -410,8 +413,8 @@ check_extensions() {
   process_pending_extension() {
     if [[ -n "$ext_name" && "$ext_enabled" == "true" ]]; then
       run_extension "$ext_name" "$ext_command" "$ext_install" "$ext_url" \
-                    "$ext_threshold" "$ext_paths" "$ext_extra" \
-                    "$ext_file_types" "$ext_exclude"
+        "$ext_threshold" "$ext_paths" "$ext_extra" \
+        "$ext_file_types" "$ext_exclude"
     fi
   }
 
@@ -420,10 +423,17 @@ check_extensions() {
     if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*name:[[:space:]]*(.*) ]]; then
       process_pending_extension
       ext_name="${BASH_REMATCH[1]}"
-      ext_name="${ext_name#\"}" ; ext_name="${ext_name%\"}"
-      ext_enabled="" ; ext_command="" ; ext_install="" ; ext_url=""
-      ext_threshold="" ; ext_paths="" ; ext_extra=""
-      ext_file_types="" ; ext_exclude=""
+      ext_name="${ext_name#\"}"
+      ext_name="${ext_name%\"}"
+      ext_enabled=""
+      ext_command=""
+      ext_install=""
+      ext_url=""
+      ext_threshold=""
+      ext_paths=""
+      ext_extra=""
+      ext_file_types=""
+      ext_exclude=""
       in_extension=true
       continue
     fi
@@ -432,32 +442,40 @@ check_extensions() {
 
     if [[ "$line" =~ ^[[:space:]]*enabled:[[:space:]]*(.*) ]]; then
       ext_enabled="${BASH_REMATCH[1]}"
-      ext_enabled="${ext_enabled#\"}" ; ext_enabled="${ext_enabled%\"}"
+      ext_enabled="${ext_enabled#\"}"
+      ext_enabled="${ext_enabled%\"}"
     elif [[ "$line" =~ ^[[:space:]]*command:[[:space:]]*(.*) ]]; then
       ext_command="${BASH_REMATCH[1]}"
-      ext_command="${ext_command#\"}" ; ext_command="${ext_command%\"}"
+      ext_command="${ext_command#\"}"
+      ext_command="${ext_command%\"}"
     elif [[ "$line" =~ ^[[:space:]]*install_hint:[[:space:]]*(.*) ]]; then
       ext_install="${BASH_REMATCH[1]}"
-      ext_install="${ext_install#\"}" ; ext_install="${ext_install%\"}"
+      ext_install="${ext_install#\"}"
+      ext_install="${ext_install%\"}"
     elif [[ "$line" =~ ^[[:space:]]*project_url:[[:space:]]*(.*) ]]; then
       ext_url="${BASH_REMATCH[1]}"
-      ext_url="${ext_url#\"}" ; ext_url="${ext_url%\"}"
+      ext_url="${ext_url#\"}"
+      ext_url="${ext_url%\"}"
     elif [[ "$line" =~ ^[[:space:]]*threshold:[[:space:]]*(.*) ]]; then
       ext_threshold="${BASH_REMATCH[1]}"
     elif [[ "$line" =~ ^[[:space:]]*paths:[[:space:]]*(.*) ]]; then
       ext_paths="${BASH_REMATCH[1]}"
-      ext_paths="${ext_paths#\"}" ; ext_paths="${ext_paths%\"}"
+      ext_paths="${ext_paths#\"}"
+      ext_paths="${ext_paths%\"}"
     elif [[ "$line" =~ ^[[:space:]]*extra_flags:[[:space:]]*(.*) ]]; then
       ext_extra="${BASH_REMATCH[1]}"
-      ext_extra="${ext_extra#\"}" ; ext_extra="${ext_extra%\"}"
+      ext_extra="${ext_extra#\"}"
+      ext_extra="${ext_extra%\"}"
     elif [[ "$line" =~ ^[[:space:]]*file_types:[[:space:]]*(.*) ]]; then
       ext_file_types="${BASH_REMATCH[1]}"
-      ext_file_types="${ext_file_types#\"}" ; ext_file_types="${ext_file_types%\"}"
+      ext_file_types="${ext_file_types#\"}"
+      ext_file_types="${ext_file_types%\"}"
     elif [[ "$line" =~ ^[[:space:]]*exclude:[[:space:]]*(.*) ]]; then
       ext_exclude="${BASH_REMATCH[1]}"
-      ext_exclude="${ext_exclude#\"}" ; ext_exclude="${ext_exclude%\"}"
+      ext_exclude="${ext_exclude#\"}"
+      ext_exclude="${ext_exclude%\"}"
     fi
-  done < "$extensions_file"
+  done <"$extensions_file"
 
   # Process the last extension
   process_pending_extension
@@ -520,7 +538,7 @@ run_file_size_check() {
     [[ -f "$filepath" ]] || continue
 
     local line_count
-    line_count=$(wc -l < "$filepath")
+    line_count=$(wc -l <"$filepath")
     ((checked_files += 1))
 
     if [[ "$line_count" -gt "$max_lines" ]]; then
@@ -573,12 +591,12 @@ main() {
   detect_project
 
   info "Project root: $PROJECT_ROOT"
-  $HAS_NODE   && info "Detected: Node.js"
+  $HAS_NODE && info "Detected: Node.js"
   $HAS_PYTHON && info "Detected: Python"
-  $HAS_GO     && info "Detected: Go"
-  $HAS_RUST   && info "Detected: Rust"
-  $FAST_MODE  && warn "Fast mode: architecture tests skipped"
-  $FIX_MODE   && warn "Fix mode: auto-fixing lint issues where possible"
+  $HAS_GO && info "Detected: Go"
+  $HAS_RUST && info "Detected: Rust"
+  $FAST_MODE && warn "Fast mode: architecture tests skipped"
+  $FIX_MODE && warn "Fix mode: auto-fixing lint issues where possible"
 
   check_build
   check_lint

@@ -238,6 +238,18 @@ project: "${PROJECT_NAME}"
 
 modules:
 
+  - path: "scripts/verify-ci.sh"
+    level: humans-only
+    reason: "CLEAR-owned enforcement script; modify intentionally with human review"
+
+  - path: "scripts/verify-local.sh"
+    level: supervised
+    reason: "Project-specific checks; AI may draft but human should review"
+
+  - path: "scripts"
+    level: supervised
+    reason: "Bootstrap and helper scripts affect developer workflow"
+
   # ── Default for uncategorized paths ──────────────────────────────────────
   - path: "*"
     level: supervised
@@ -283,7 +295,18 @@ else
 
 project: "${PROJECT_NAME}"
 
-modules:${AUTONOMY_ENTRIES}
+modules:
+  - path: "scripts/verify-ci.sh"
+    level: humans-only
+    reason: "CLEAR-owned enforcement script; modify intentionally with human review"
+
+  - path: "scripts/verify-local.sh"
+    level: supervised
+    reason: "Project-specific checks; AI may draft but human should review"
+
+  - path: "scripts"
+    level: supervised
+    reason: "Bootstrap and helper scripts affect developer workflow"${AUTONOMY_ENTRIES}
 
   # ── Default for uncategorized paths ──────────────────────────────────────
   - path: "*"

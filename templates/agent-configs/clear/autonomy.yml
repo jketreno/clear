@@ -15,6 +15,18 @@
 project: "your-project"
 
 modules:
+  - path: "scripts/verify-ci.sh"
+    level: humans-only
+    reason: "CLEAR-owned enforcement script; modify intentionally with human review"
+
+  - path: "scripts/verify-local.sh"
+    level: supervised
+    reason: "Project-specific checks; AI may draft but human should review"
+
+  - path: "scripts"
+    level: supervised
+    reason: "Bootstrap and helper scripts affect developer workflow"
+
   - path: "*"
     level: supervised
     reason: "Default: untagged modules require human review"
