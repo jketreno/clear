@@ -19,12 +19,12 @@ Works with GitHub Copilot, Claude Code, Cursor, and MCP-compatible agent framewo
 ### 1 — Install CLEAR into your project
 
 <!-- RELEASE_VERSION_START -->
-**Latest release: [v1.0.0](https://github.com/jketreno/clear/releases/tag/v1.0.0)**
+**Latest release: [v1.1.0](https://github.com/jketreno/clear/releases/tag/v1.1.0)**
 
 ```bash
-curl -fsSLO https://github.com/jketreno/clear/releases/download/v1.0.0/clear-installer-v1.0.0.sh
-chmod +x ./clear-installer-v1.0.0.sh
-./clear-installer-v1.0.0.sh --target /path/to/your-project
+curl -fsSLO https://github.com/jketreno/clear/releases/download/v1.1.0/clear-installer-v1.1.0.sh
+chmod +x ./clear-installer-v1.1.0.sh
+./clear-installer-v1.1.0.sh --target /path/to/your-project
 ```
 <!-- RELEASE_VERSION_END -->
 
@@ -38,7 +38,7 @@ Manual prompts for boundaries/concepts are still available as a fallback.
 ### 2 — See it work
 
 ```bash
-./scripts/verify-ci.sh
+./clear/verify-ci.sh
 ```
 
 You should see all checks pass. This is the script your AI tool runs before reporting any work as complete. Right now it checks autonomy boundaries and shell compliance. Your project-specific checks come next.
@@ -50,10 +50,10 @@ Open your AI tool (Copilot, Claude Code, Cursor) in your project. It automatical
 ```
 Analyze this codebase and identify the build tools, linters, test frameworks,
 and any existing architecture tests. For each tool found, show me the exact
-run_check() line to add to scripts/verify-local.sh. Wait for my approval.
+run_check() line to add to clear/verify-local.sh. Wait for my approval.
 ```
 
-Review what the AI proposes, approve it, then run `./scripts/verify-ci.sh` again — your checks are now enforced.
+Review what the AI proposes, approve it, then run `./clear/verify-ci.sh` again — your checks are now enforced.
 
 ### 5 — Turn a code review comment into an enforced rule
 
@@ -64,7 +64,7 @@ I want to turn this code review rule into an enforced constraint:
 "[paste your most common review comment here]"
 
 What type of check best enforces this — linter rule, architecture test, or build flag?
-Show me the code for the check and the run_check() line for verify-local.sh.
+Show me the code for the check and the run_check() line for clear/verify-local.sh.
 Wait for my approval.
 ```
 
@@ -88,7 +88,7 @@ flowchart TD
 
     GEN --> VCI
 
-    subgraph VCI["scripts/verify-ci.sh"]
+    subgraph VCI["clear/verify-ci.sh"]
         direction LR
         B[Build] --> L[Lint] --> T[Tests] --> A["Architecture<br/>Tests"] --> G["Autonomy<br/>Guard"]
     end
@@ -100,7 +100,7 @@ flowchart TD
 
 The core rule every AI config enforces:
 
-> **Run `./scripts/verify-ci.sh` before reporting work as complete. If it fails, fix the issues and run again. Never say "done" if it fails.**
+> **Run `./clear/verify-ci.sh` before reporting work as complete. If it fails, fix the issues and run again. Never say "done" if it fails.**
 
 ---
 
@@ -121,27 +121,26 @@ The core rule every AI config enforces:
 The installer copies these into your project:
 
 ```
-scripts/
-  verify-ci.sh       — The enforcement script (CLEAR-owned, updated automatically)
-  verify-local.sh    — Your project-specific checks (never overwritten)
-
 clear/
-  autonomy.yml       — Module boundaries (full-autonomy / supervised / humans-only)
-  extensions.yml     — Optional tool extensions (e.g., Lizard complexity analysis)
-  principles.md      — AI quick-reference card (read at session start)
+  verify-ci.sh          — The enforcement script (CLEAR-owned, updated automatically)
+  verify-local.sh       — Your project-specific checks (never overwritten)
+  autonomy.yml          — Module boundaries (full-autonomy / supervised / humans-only)
+  extensions.yml        — Optional tool extensions (e.g., Lizard complexity analysis)
+  principles.md         — AI quick-reference card (read at session start)
+  templates/
+    architecture-tests/ — Autonomy guard test (copy into your test suite)
+    skills/             — AI skills (autonomy bootstrap, MCP server scaffolding, code review)
+    linting/            — ESLint config templates (flat, legacy, React/TSX)
+    git-hooks/          — Pre-commit hook that runs verify-ci.sh
+    github-actions/     — CI/CD workflow template
+  examples/             — Domain-specific examples (available separately)
+  docs/                 — Agentic workflows & MCP integration guide
 
-CLAUDE.md            — Claude Code config (auto-read at session start)
-.github/             — GitHub Copilot instruction files
-.cursor/rules/       — Cursor MDC rule files
-.claude/commands/    — Claude slash commands (/project:verify, check-autonomy, update-autonomy)
-.vscode/             — VS Code tasks, settings, recommended extensions
-
-templates/
-  architecture-tests/ — Autonomy guard test (copy into your test suite)
-  skills/             — AI skills (autonomy bootstrap, MCP server scaffolding, code review)
-  linting/            — ESLint config templates (flat, legacy, React/TSX)
-  git-hooks/          — Pre-commit hook that runs verify-ci.sh
-  github-actions/     — CI/CD workflow template
+CLAUDE.md              — Claude Code config (auto-read at session start)
+.github/               — GitHub Copilot instruction files
+.cursor/rules/         — Cursor MDC rule files
+.claude/commands/      — Claude slash commands (/project:verify, check-autonomy, update-autonomy)
+.vscode/               — VS Code tasks, settings, recommended extensions
 ```
 
 Domain-specific examples (API endpoint skills, type-sync tests, etc.) are available separately:
