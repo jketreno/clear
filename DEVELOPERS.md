@@ -8,48 +8,6 @@
 
 Developer release information...
 
----
-
-## Mermaid Asset Publishing (Markdown + LinkedIn)
-
-This repo includes a publish workflow that renders Mermaid diagrams into static
-assets for docs and social distribution.
-
-### Local render
-
-Prerequisite: Node.js with `npm`/`npx` available on PATH.
-
-```bash
-./scripts/render-mermaid-assets.sh
-```
-
-Outputs:
-
-- `assets/publish/readme.rendered.md` — README transformed so Mermaid code fences
-  are replaced with image references
-- `assets/publish/readme.rendered-*.svg` — generated SVG assets for markdown
-  diagrams
-- `assets/publish/linkedin/clear-overview-1200x627.png` — LinkedIn article cover
-  size (1.91:1)
-- `assets/publish/linkedin/clear-overview-1080x1080.png` — LinkedIn feed square
-- `assets/publish/linkedin/clear-overview.svg` — Beautiful source SVG for social
-  reuse
-
-### CI publish workflow
-
-GitHub Actions workflow:
-
-- `.github/workflows/publish-mermaid-assets.yml`
-
-It runs on manual dispatch and on pushes that modify Mermaid sources, then
-uploads generated SVG/PNG files as artifacts.
-
-Mermaid source/config files:
-
-- `assets/diagrams/clear-overview.mmd`
-
----
-
 | Topic | Document |
 |-------|---------|
 | Release runbook | [docs/release.md](docs/release.md) |

@@ -20,7 +20,7 @@ The `templates/architecture-tests/` directory contains tests that work on any CL
 
 Extract examples on demand:
 ```bash
-./scripts/bootstrap-project.sh --install-examples /path/to/examples
+./scripts/clear-installer.sh --install-examples /path/to/examples
 ```
 
 Or copy individually:

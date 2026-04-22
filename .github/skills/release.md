@@ -40,7 +40,7 @@ Inspect script capabilities and compare with README/docs references:
 
 ```bash
 ./scripts/release.sh --help
-./scripts/bootstrap-project.sh --help
+./scripts/clear-installer.sh --help
 ```
 
 Verify README and all files under `docs/` only reference supported commands and flags.

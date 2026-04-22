@@ -23,8 +23,7 @@ cd clear
 Look at the top-level structure:
 
 ```
-scripts/          — verify-ci.sh (enforcement), setup-clear.sh (wizard),
-                    bootstrap-project.sh (bootstrap + update)
+scripts/          — verify-ci.sh (enforcement), clear-installer.sh (install/update/setup)
 clear/            — autonomy.yml (boundaries), principles.md (reference)
 templates/        — copy-paste starting points for architecture tests and skills
 docs/             — this documentation
@@ -38,19 +37,19 @@ CLAUDE.md         — Claude Code root config
 
 ## Step 2: Initialize CLEAR for a New Project
 
-If you are adopting CLEAR into an **existing** project (most common), run the bootstrap script from the CLEAR seed repo:
+If you are adopting CLEAR into an **existing** project (most common), run the unified installer from the CLEAR seed repo:
 
 ```bash
 # From the clear/ seed repository root:
-./scripts/bootstrap-project.sh /path/to/your-project
+./scripts/clear-installer.sh /path/to/your-project
 ```
 
 This copies all CLEAR files into your project and then launches the setup wizard automatically. Existing files in your project are never overwritten — directories are merged and individual files are skipped if they already exist.
 
-If the target already has CLEAR installed, run bootstrap in update mode:
+If the target already has CLEAR installed, run the same command again (update is auto-detected):
 
 ```bash
-./scripts/bootstrap-project.sh --update /path/to/your-project
+./scripts/clear-installer.sh --target /path/to/your-project
 ```
 
 **Options:**
@@ -58,20 +57,17 @@ If the target already has CLEAR installed, run bootstrap in update mode:
 | Flag | Description |
 |------|-------------|
 | `--dry-run` | Show what would be copied without writing anything |
-| `--update` | Update an already-bootstrapped project |
-| `--no-templates` | Skip copying the `templates/` directory |
-| `--no-setup` | Copy files only; skip running `setup-clear.sh` |
+| `--target <path>` | Explicit target repository path |
+| `--no-setup` | Install/update files only; skip setup wizard |
 | `--install-examples <path>` | Extract domain-specific examples to `<path>` and exit |
-| `--enable-extension <name>` | Enable one or more extensions (repeatable) |
-| `--setup-extensions` | Interactive extension setup (use with `--update`) |
-| `--self-sync` | Allow self-sync when targeting the CLEAR seed repo (use with `--update`) |
+| `--extract <path>` | Extract embedded payload only (release installer mode) |
 
 ```bash
 # Preview what will happen first:
-./scripts/bootstrap-project.sh --dry-run /path/to/your-project
+./scripts/clear-installer.sh --dry-run /path/to/your-project
 
 # Copy files without running the setup wizard:
-./scripts/bootstrap-project.sh --no-setup /path/to/your-project
+./scripts/clear-installer.sh --no-setup /path/to/your-project
 ```
 
 The setup wizard will:
@@ -79,11 +75,11 @@ The setup wizard will:
 2. Create or keep a starter `clear/autonomy.yml`
 3. Fall back to manual prompts for boundaries/concepts if you choose not to use the skill flow
 
-**Keeping your project up to date:** As the CLEAR seed evolves, run bootstrap in update mode to sync improvements back into your project:
+**Keeping your project up to date:** As the CLEAR seed evolves, re-run the installer to sync improvements back into your project:
 
 ```bash
 # From the clear/ seed repository root:
-./scripts/bootstrap-project.sh --update /path/to/your-project
+./scripts/clear-installer.sh --target /path/to/your-project
 ```
 
 ---

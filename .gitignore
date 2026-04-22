@@ -9,7 +9,6 @@ build/
 out/
 .next/
 .nuxt/
-assets/publish/
 
 # Python
 __pycache__/

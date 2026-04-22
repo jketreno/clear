@@ -15,7 +15,7 @@
 #
 # Customization:
 #   Add project-specific checks to scripts/verify-local.sh (not this file).
-#   This file is CLEAR-owned and updated by bootstrap-project.sh --update.
+#   This file is CLEAR-owned and updated by clear-installer.sh.
 #   verify-local.sh is YOUR file — it is never overwritten.
 #
 # AI Instructions: Run this script after generating or modifying any code.
@@ -180,13 +180,15 @@ run_lizard_check() {
   local threshold="$1"
   local scan_paths="$2"
   local extra_flags="$3"
-  local exclude_patterns="$4"
+  local file_types="${4:-js jsx ts tsx}"
+  local exclude_patterns="$5"
 
   local lizard_files=()
   while IFS= read -r rel_path; do
     [[ -z "$rel_path" ]] && continue
     is_default_ignored_path "$rel_path" && continue
     path_within_scan_paths "$rel_path" "$scan_paths" || continue
+    matches_any_file_type "$rel_path" "$file_types" || continue
     is_extension_excluded "$rel_path" "$exclude_patterns" && continue
 
     local abs_path="$PROJECT_ROOT/$rel_path"
@@ -195,7 +197,7 @@ run_lizard_check() {
   done < <(list_project_files_respecting_gitignore)
 
   if [[ ${#lizard_files[@]} -eq 0 ]]; then
-    warn "Lizard: no files matched configured paths (configured: $scan_paths)"
+    warn "Lizard: no files matched configured paths/types (paths: $scan_paths, types: $file_types)"
     return 0
   fi
 
@@ -392,7 +394,7 @@ check_autonomy() {
       fi
     fi
   else
-    warn "clear/autonomy.yml not found — run scripts/setup-clear.sh to configure autonomy boundaries"
+    warn "clear/autonomy.yml not found — run scripts/clear-installer.sh --target . to configure CLEAR"
   fi
 }
 
@@ -506,7 +508,7 @@ run_extension() {
   # Build and run the extension command
   case "$name" in
     lizard)
-      run_lizard_check "$threshold" "$paths" "$extra" "$exclude"
+      run_lizard_check "$threshold" "$paths" "$extra" "$file_types" "$exclude"
       ;;
     file-size)
       run_file_size_check "$threshold" "$paths" "$file_types" "$exclude"
@@ -521,7 +523,7 @@ run_extension() {
 run_file_size_check() {
   local max_lines="${1:-300}"
   local scan_paths="${2:-src}"
-  local file_types="${3:-ts tsx jsx}"
+  local file_types="${3:-js ts tsx jsx}"
   local exclude_patterns="${4:-}"
   local oversized_files=()
   local oversized_counts=()

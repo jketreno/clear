@@ -101,7 +101,7 @@ See [docs/agentic.md](../docs/agentic.md) for full patterns and the `templates/s
 | `clear/principles.md` | This file — AI quick reference |
 | `scripts/verify-ci.sh` | Local CI/CD enforcement — CLEAR-owned, auto-updated |
 | `scripts/verify-local.sh` | Project-specific checks — yours to edit |
-| `scripts/setup-clear.sh` | Interactive setup wizard for new projects |
+| `scripts/clear-installer.sh` | Unified install/update/setup entrypoint for new projects |
 | `templates/architecture-tests/` | Generic architecture tests (autonomy guard) |
 | `templates/examples/architecture-tests/` | Domain-specific test examples (API rules, type sync, module boundaries) |
 | `templates/skills/` | Generic AI skills (MCP server, code review) |

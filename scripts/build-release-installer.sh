@@ -79,8 +79,12 @@ PAYLOAD_DIR="$STAGE_DIR/clear-dist"
 mkdir -p "$PAYLOAD_DIR"
 
 rl_info "Staging release payload"
-cp -R "$PROJECT_ROOT/scripts" "$PAYLOAD_DIR/scripts"
-cp -R "$PROJECT_ROOT/clear" "$PAYLOAD_DIR/clear"
+mkdir -p "$PAYLOAD_DIR/scripts"
+cp "$PROJECT_ROOT/scripts/clear-installer.sh" "$PAYLOAD_DIR/scripts/clear-installer.sh"
+cp "$PROJECT_ROOT/scripts/verify-ci.sh" "$PAYLOAD_DIR/scripts/verify-ci.sh"
+mkdir -p "$PAYLOAD_DIR/clear"
+cp "$PROJECT_ROOT/clear/principles.md" "$PAYLOAD_DIR/clear/principles.md"
+cp "$PROJECT_ROOT/clear/extensions.yml" "$PAYLOAD_DIR/clear/extensions.yml"
 cp -R "$PROJECT_ROOT/templates" "$PAYLOAD_DIR/templates"
 cp -R "$PROJECT_ROOT/docs" "$PAYLOAD_DIR/docs"
 cp "$PROJECT_ROOT/README.md" "$PAYLOAD_DIR/README.md"
@@ -103,181 +107,9 @@ INSTALLER_PATH="$OUTPUT_DIR/$INSTALLER_NAME"
 CHECKSUM_PATH="$OUTPUT_DIR/$CHECKSUM_NAME"
 SIGNATURE_PATH="$OUTPUT_DIR/$SIGNATURE_NAME"
 
-cat >"$INSTALLER_PATH" <<'EOF'
-#!/usr/bin/env bash
-# CLEAR self-extracting installer
-set -euo pipefail
-
-EXIT_USAGE=2
-EXIT_PREFLIGHT=3
-EXIT_RUNTIME=4
-EXIT_EXTRACT=5
-
-TARGET_DIR="$PWD"
-DRY_RUN=false
-FORCE=false
-YES=false
-EXTRACT_PATH=""
-WORK_DIR=""
-
-error() { echo "ERR  $*" >&2; }
-info() { echo "INFO $*"; }
-
-usage() {
-  cat <<'USAGE'
-Usage:
-  clear-installer.sh [--target <path>] [--dry-run] [--force] [--yes]
-  clear-installer.sh --extract <path> [--force]
-
-Options:
-  --target <path>   Target repository path (default: current directory)
-  --dry-run         Show what would happen without modifying target files
-  --force           Allow overwrite for --extract collisions
-  --yes             Auto-confirm prompts
-  --extract <path>  Extract payload only, do not install/update
-  --help            Show this help
-USAGE
-}
-
-cleanup() {
-  if [[ -n "$WORK_DIR" && -d "$WORK_DIR" ]]; then
-    rm -rf "$WORK_DIR"
-  fi
-}
-
-extract_payload() {
-  local destination="$1"
-  local marker_line
-  marker_line="$(awk '/^__CLEAR_PAYLOAD_BELOW__$/ { print NR + 1; exit }' "$0")"
-  [[ -n "$marker_line" ]] || {
-    error "Installer payload marker not found"
-    return 1
-  }
-
-  mkdir -p "$destination"
-  tail -n "+$marker_line" "$0" | tar -xzf - -C "$destination"
-}
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --target)
-      TARGET_DIR="${2:-}"
-      shift 2
-      ;;
-    --dry-run)
-      DRY_RUN=true
-      shift
-      ;;
-    --force)
-      FORCE=true
-      shift
-      ;;
-    --yes)
-      YES=true
-      shift
-      ;;
-    --extract)
-      EXTRACT_PATH="${2:-}"
-      shift 2
-      ;;
-    --help|-h)
-      usage
-      exit 0
-      ;;
-    *)
-      error "Unknown argument: $1"
-      usage
-      exit "$EXIT_USAGE"
-      ;;
-  esac
-done
-
-if [[ -n "$EXTRACT_PATH" && ( "$TARGET_DIR" != "$PWD" || "$DRY_RUN" == "true" || "$YES" == "true" ) ]]; then
-  error "--extract cannot be combined with --target, --dry-run, or --yes"
-  exit "$EXIT_USAGE"
-fi
-
-if [[ -n "$EXTRACT_PATH" ]]; then
-  if [[ -e "$EXTRACT_PATH" ]]; then
-    if [[ -d "$EXTRACT_PATH" && -n "$(ls -A "$EXTRACT_PATH" 2>/dev/null)" && "$FORCE" != "true" ]]; then
-      error "Extraction path exists and is not empty. Use --force to allow overwrite."
-      exit "$EXIT_EXTRACT"
-    fi
-    if [[ ! -d "$EXTRACT_PATH" ]]; then
-      error "Extraction path exists and is not a directory: $EXTRACT_PATH"
-      exit "$EXIT_EXTRACT"
-    fi
-  fi
-
-  mkdir -p "$EXTRACT_PATH"
-  extract_payload "$EXTRACT_PATH" || {
-    error "Extraction failed"
-    exit "$EXIT_EXTRACT"
-  }
-
-  info "Extraction complete: $EXTRACT_PATH"
-  echo "RESULT success mode=extract"
-  exit 0
-fi
-
-command -v tar >/dev/null 2>&1 || {
-  error "Required tool not found: tar"
-  exit "$EXIT_PREFLIGHT"
-}
-command -v mktemp >/dev/null 2>&1 || {
-  error "Required tool not found: mktemp"
-  exit "$EXIT_PREFLIGHT"
-}
-
-WORK_DIR="$(mktemp -d)"
-trap cleanup EXIT INT TERM
-
-extract_payload "$WORK_DIR" || {
-  error "Failed to extract installer payload"
-  exit "$EXIT_EXTRACT"
-}
-
-PAYLOAD_ROOT="$WORK_DIR/clear-dist"
-[[ -d "$PAYLOAD_ROOT" ]] || {
-  error "Extracted payload is missing clear-dist"
-  exit "$EXIT_RUNTIME"
-}
-
-if [[ ! -d "$TARGET_DIR" ]]; then
-  error "Target directory does not exist: $TARGET_DIR"
-  exit "$EXIT_RUNTIME"
-fi
-
-if [[ -f "$TARGET_DIR/clear/autonomy.yml" ]]; then
-  info "Detected existing CLEAR project. Running update workflow."
-  UPDATE_CMD=("$PAYLOAD_ROOT/scripts/bootstrap-project.sh" "--update")
-  if [[ "$DRY_RUN" == "true" ]]; then
-    UPDATE_CMD+=("--dry-run")
-  fi
-  UPDATE_CMD+=("$TARGET_DIR")
-  "${UPDATE_CMD[@]}" || {
-    error "Update workflow failed"
-    exit "$EXIT_RUNTIME"
-  }
-else
-  info "Detected fresh target. Running bootstrap workflow."
-  BOOTSTRAP_CMD=("$PAYLOAD_ROOT/scripts/bootstrap-project.sh" "--no-setup")
-  if [[ "$DRY_RUN" == "true" ]]; then
-    BOOTSTRAP_CMD+=("--dry-run")
-  fi
-  BOOTSTRAP_CMD+=("$TARGET_DIR")
-  "${BOOTSTRAP_CMD[@]}" || {
-    error "Bootstrap workflow failed"
-    exit "$EXIT_RUNTIME"
-  }
-fi
-
-info "Installer completed successfully"
-echo "RESULT success mode=install-or-update"
-exit 0
-
-__CLEAR_PAYLOAD_BELOW__
-EOF
+cp "$PROJECT_ROOT/scripts/clear-installer.sh" "$INSTALLER_PATH"
+echo "" >>"$INSTALLER_PATH"
+echo "__CLEAR_PAYLOAD_BELOW__" >>"$INSTALLER_PATH"
 
 cat "$PAYLOAD_TARBALL" >>"$INSTALLER_PATH"
 chmod +x "$INSTALLER_PATH"

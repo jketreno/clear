@@ -152,7 +152,7 @@ applyTo: "backend/models/api/**"
 - The architecture test in `autonomy-guard.test.js` provides mechanical enforcement
 
 **verify-ci.sh not found:**
-- Run `chmod +x scripts/verify-ci.sh && chmod +x scripts/setup-clear.sh`
+- Run `chmod +x scripts/verify-ci.sh && chmod +x scripts/clear-installer.sh`
 - Make sure you're running from the project root
 
 **VS Code task "CLEAR: Verify CI" doesn't appear:**

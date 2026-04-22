@@ -30,19 +30,12 @@ chmod +x ./clear-installer-v1.0.0.sh
 
 This copies CLEAR's scripts, AI tool configs, and templates into your project. If CLEAR is already installed, the installer updates CLEAR-owned files and preserves your customizations.
 
-### 2 — Run the setup wizard
-
-```bash
-cd /path/to/your-project
-./scripts/setup-clear.sh
-```
-
-The wizard now defaults to a hybrid flow: it can install a safe starter `clear/autonomy.yml`
+It then runs the setup wizard, which uses a hybrid flow: it can install a safe starter `clear/autonomy.yml`
 and guide you to run the `autonomy-bootstrap` skill from your AI assistant
 (Cursor, Copilot Chat, Claude, etc.) to generate project-specific boundaries and sources of truth.
 Manual prompts for boundaries/concepts are still available as a fallback.
 
-### 3 — See it work
+### 2 — See it work
 
 ```bash
 ./scripts/verify-ci.sh
@@ -131,7 +124,6 @@ The installer copies these into your project:
 scripts/
   verify-ci.sh       — The enforcement script (CLEAR-owned, updated automatically)
   verify-local.sh    — Your project-specific checks (never overwritten)
-  setup-clear.sh     — Interactive setup wizard
 
 clear/
   autonomy.yml       — Module boundaries (full-autonomy / supervised / humans-only)
@@ -156,7 +148,7 @@ Domain-specific examples (API endpoint skills, type-sync tests, etc.) are availa
 
 ```bash
 # Extract examples on demand (outside onboarding):
-./scripts/bootstrap-project.sh --install-examples /path/to/examples
+./clear-installer-vX.Y.Z.sh --install-examples /path/to/examples
 ```
 
 ---
@@ -181,14 +173,13 @@ If you prefer to work from the git repo (for contributing or customizing CLEAR i
 ```bash
 git clone https://github.com/jketreno/clear
 cd clear
-./scripts/bootstrap-project.sh /path/to/your-project          # install + setup wizard
-./scripts/bootstrap-project.sh --install-examples /path/to/examples  # extract domain-specific examples
-./scripts/bootstrap-project.sh --dry-run /path/to/project        # preview only
-./scripts/bootstrap-project.sh --update /path/to/project         # update an existing CLEAR install
+./scripts/clear-installer.sh /path/to/your-project                 # install + setup wizard
+./scripts/clear-installer.sh --install-examples /path/to/examples  # extract domain-specific examples
+./scripts/clear-installer.sh --dry-run /path/to/project            # preview only
+./scripts/clear-installer.sh --target /path/to/project             # update an existing CLEAR install
 ```
 
-If the target project is already bootstrapped, `bootstrap-project.sh` now asks you to use
-`--update` instead of running bootstrap mode again.
+The unified installer auto-detects fresh install vs update based on `clear/autonomy.yml`.
 
 ---
 

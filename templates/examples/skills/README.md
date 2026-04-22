@@ -26,7 +26,7 @@ See the generic skills in `templates/skills/` (`autonomy-bootstrap.md`, `mcp-ser
 
 Extract examples on demand:
 ```bash
-./scripts/bootstrap-project.sh --install-examples /path/to/examples
+./scripts/clear-installer.sh --install-examples /path/to/examples
 ```
 
 Or copy individually:

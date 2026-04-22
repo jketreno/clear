@@ -54,7 +54,7 @@
     {
       "label": "CLEAR: Setup",
       "type": "shell",
-      "command": "./scripts/setup-clear.sh",
+      "command": "./scripts/clear-installer.sh --target .",
       "group": "none",
       "presentation": {
         "echo": true,
@@ -63,7 +63,7 @@
         "panel": "new"
       },
       "problemMatcher": [],
-      "detail": "Run the interactive CLEAR setup wizard."
+      "detail": "Run unified CLEAR installer/setup flow for current project."
     },
     {
       "label": "CLEAR: Show Autonomy Boundaries",

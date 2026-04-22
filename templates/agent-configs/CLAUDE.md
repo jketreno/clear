@@ -39,7 +39,7 @@ humans-only zones: [list paths, or "none"]
 verify-ci.sh: [found ✅ | NOT FOUND ⚠]
 ```
 
-Fill in the actual values by reading the files. Show this block **once per session**, not on every message. If `clear/autonomy.yml` is missing, warn the user to run `./scripts/setup-clear.sh`.
+Fill in the actual values by reading the files. Show this block **once per session**, not on every message. If `clear/autonomy.yml` is missing, warn the user to run `./scripts/clear-installer.sh --target .`.
 
 ---
 
@@ -144,7 +144,7 @@ Wait for approval before writing code.
 | `clear/principles.md` | Five CLEAR principles quick reference |
 | `scripts/verify-ci.sh` | Root CI enforcement script — run before completing work (CLEAR-owned) |
 | `scripts/verify-local.sh` | Project-specific checks — add your checks here |
-| `scripts/setup-clear.sh` | One-time setup wizard |
+| `scripts/clear-installer.sh` | One-time install/update/setup entrypoint |
 | `templates/architecture-tests/` | Generic architecture tests (autonomy guard) |
 | `templates/examples/architecture-tests/` | Domain-specific test examples |
 | `templates/skills/` | Generic AI skills (MCP server, code review) |
@@ -164,7 +164,7 @@ Wait for approval before writing code.
 ./scripts/verify-ci.sh --fix       # Auto-fix lint
 
 # Setup
-./scripts/setup-clear.sh           # Interactive setup wizard
+./scripts/clear-installer.sh --target .   # Interactive install/update/setup
 
 # Autonomy
 cat clear/autonomy.yml             # View all boundaries

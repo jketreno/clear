@@ -4,7 +4,7 @@
 # CLEAR Principle: [L] Limited — Define where AI works alone vs with humans
 #
 # This file describes boundaries for developing the CLEAR framework itself.
-# When you bootstrap CLEAR into another repo, run scripts/setup-clear.sh or
+# When you install CLEAR into another repo, run scripts/clear-installer.sh or
 # replace this file with boundaries that match that project's layout.
 #
 # Levels:

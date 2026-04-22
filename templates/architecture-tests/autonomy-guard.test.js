@@ -125,7 +125,7 @@ describe('CLEAR Autonomy Boundary Guard', () => {
 
   beforeAll(() => {
     if (!fs.existsSync(AUTONOMY_FILE)) {
-      console.warn('clear/autonomy.yml not found — run scripts/setup-clear.sh');
+      console.warn('clear/autonomy.yml not found — run scripts/clear-installer.sh --target .');
       autonomyModules = [];
       return;
     }
@@ -142,7 +142,7 @@ describe('CLEAR Autonomy Boundary Guard', () => {
 
   test('autonomy.yml has at least one module boundary defined', () => {
     if (autonomyModules.length === 0) {
-      console.warn('No module boundaries in autonomy.yml — run scripts/setup-clear.sh');
+      console.warn('No module boundaries in autonomy.yml — run scripts/clear-installer.sh --target .');
       return;
     }
     expect(autonomyModules.length).toBeGreaterThan(0);
