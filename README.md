@@ -6,6 +6,14 @@
 
 > **C**onstrained · **L**imited · **E**phemeral · **A**ssertive · **R**eality-Aligned
 
+The counterintuitive part of AI-assisted development:
+
+> **More constraints = more autonomy.**
+>
+> The tighter you define the boundaries, the more you can safely delegate. Loose boundaries mean you're reviewing everything because anything could break anything.
+>
+> This feels backwards until you try it.
+
 Your architecture rules live in code reviews and tribal knowledge. AI can't read any of that — so it generates code that works but violates your patterns.
 
 CLEAR fixes this: define your rules as automated checks, tell the AI to run them before finishing, and let it self-correct. The AI generates code, runs `verify-ci.sh`, sees the failure, fixes it, and reports done — you never see the violation.
