@@ -27,11 +27,22 @@ Templates in `install/clear/templates/` are `full-autonomy` — feel free to:
 - Improve linting configs
 - Add CI/CD templates for other providers (GitLab, Bitbucket, etc.)
 
+Note on generated files:
+- Template source files in `install/clear/templates/` are hand-edited and versioned in this repo.
+- Generated outputs in downstream projects should still be regenerated from their declared source of truth (do not hand-edit generated artifacts).
+
 ### Improve Documentation
 Docs are `supervised` — PRs welcome, but expect review before merge:
 - Fix errors or unclear explanations in `docs/`
 - Add examples from your own experience
 - Translate documentation
+
+### Propose Breaking Changes
+For breaking framework changes (for example, new autonomy levels, verify-ci.sh contract changes, or installer behavior changes):
+1. Open a GitHub Discussion first with motivation, alternatives, and migration impact.
+2. Link the discussion in your PR description.
+3. Add migration notes in `CHANGELOG.md` and relevant docs.
+4. Include or update constraint tests that enforce the new contract.
 
 ## Development Setup
 
@@ -48,4 +59,5 @@ Be respectful, constructive, and focused on making AI-assisted development bette
 
 ## Questions?
 
-Open a GitHub Discussion — that's the best place for questions, ideas, and conversation.
+Open a GitHub Discussion — that's the best place for questions, ideas, and conversation:
+https://github.com/jketreno/clear/discussions
