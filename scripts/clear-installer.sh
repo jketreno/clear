@@ -31,6 +31,11 @@ INSTALL_EXAMPLES_PATH=""
 RUN_SETUP=true
 SETUP_ONLY=false
 WORK_DIR=""
+HAS_TTY=false
+
+if [[ -t 0 && -t 1 ]]; then
+  HAS_TTY=true
+fi
 
 supports_color() {
   [[ -z "${NO_COLOR:-}" ]] || return 1
@@ -197,6 +202,11 @@ ask() {
     return 0
   fi
 
+  if ! $HAS_TTY; then
+    echo "$default"
+    return 0
+  fi
+
   if [[ -n "$default" ]]; then
     printf "?  %s [%s]: " "$question" "$default" >&2
   else
@@ -212,6 +222,11 @@ ask_yn() {
   local answer
 
   if [[ "$YES" == "true" ]]; then
+    [[ "$default" =~ ^[Yy]$ ]]
+    return
+  fi
+
+  if ! $HAS_TTY; then
     [[ "$default" =~ ^[Yy]$ ]]
     return
   fi
@@ -332,11 +347,12 @@ run_setup_flow() {
     done
 
     local selection
-    if [[ "$YES" == "true" ]]; then
-      selection=""
-    else
+    selection=""
+    if [[ "$YES" != "true" && "$HAS_TTY" == "true" ]]; then
       printf "${CYAN}  Enter numbers to install (space-separated), 'all', or press ENTER to skip: ${NC}" >/dev/tty
       read -r selection </dev/tty
+    elif [[ "$YES" != "true" ]]; then
+      info "No TTY detected; skipping interactive skill selection"
     fi
     echo ""
 
@@ -499,9 +515,11 @@ run_setup_flow() {
     done
 
     EXT_SELECTION=""
-    if [[ "$YES" != "true" ]]; then
+    if [[ "$YES" != "true" && "$HAS_TTY" == "true" ]]; then
       printf "${CYAN}  Enter numbers to enable (space-separated), 'all', or press ENTER to skip: ${NC}" >/dev/tty
       read -r EXT_SELECTION </dev/tty
+    elif [[ "$YES" != "true" ]]; then
+      info "No TTY detected; skipping interactive extension selection"
     fi
     echo ""
 
