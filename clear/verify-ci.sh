@@ -29,6 +29,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 FAST_MODE=false
 FIX_MODE=false
+INCLUDE_UNTRACKED=true
 FAILED_CHECKS=()
 
 usage() {
@@ -40,6 +41,8 @@ Run local CI/CD checks and enforce CLEAR constraints.
 Options:
   --fast        Skip slow checks (architecture tests)
   --fix         Auto-fix lint issues where supported
+  --exclude-untracked
+               Check only tracked files (exclude untracked files)
   -h, --help    Show this help message and exit
 EOF
 }
@@ -49,6 +52,7 @@ for arg in "$@"; do
   case "$arg" in
     --fast) FAST_MODE=true ;;
     --fix) FIX_MODE=true ;;
+    --exclude-untracked) INCLUDE_UNTRACKED=false ;;
     -h | --help)
       usage
       exit 0
@@ -159,8 +163,13 @@ list_project_files_respecting_gitignore() {
   if command -v git >/dev/null 2>&1 && git -C "$PROJECT_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
     (
       cd "$PROJECT_ROOT"
-      # Tracked + untracked files, respecting .gitignore/.git/info/exclude/global excludes.
-      git ls-files -co --exclude-standard
+      if $INCLUDE_UNTRACKED; then
+        # Tracked + untracked files, respecting .gitignore/.git/info/exclude/global excludes.
+        git ls-files -co --exclude-standard
+      else
+        # Tracked files only.
+        git ls-files
+      fi
     )
   else
     find "$PROJECT_ROOT" -type f \
@@ -671,6 +680,11 @@ main() {
   $HAS_RUST && info "Detected: Rust"
   $FAST_MODE && warn "Fast mode: architecture tests skipped"
   $FIX_MODE && warn "Fix mode: auto-fixing lint issues where possible"
+  if $INCLUDE_UNTRACKED; then
+    info "File scanning includes untracked files (use --exclude-untracked to limit to tracked files)"
+  else
+    info "File scanning excludes untracked files"
+  fi
 
   check_build
   check_lint
@@ -684,7 +698,7 @@ main() {
   echo -e "${BLUE}════════════════════════════════════════════${NC}"
   if [[ ${#FAILED_CHECKS[@]} -eq 0 ]]; then
     echo -e "${GREEN}✅ All checks passed — work is complete.${NC}"
-    echo -e "${GREEN}   You may now commit your changes.${NC}"
+    echo -e "${GREEN}   No further terminal input is required; you can proceed to commit.${NC}"
     echo ""
     exit 0
   else
