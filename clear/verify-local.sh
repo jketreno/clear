@@ -96,11 +96,7 @@ is_humans_only_match() {
 is_required_shell_check_path() {
   local rel_path="$1"
 
-  if [[ "$rel_path" == "clear/verify-ci.sh" ]]; then
-    return 0
-  fi
-
-  if [[ "$rel_path" =~ ^install/.*/verify-ci\.sh$ ]]; then
+  if [[ "$(basename "$rel_path")" == "verify-ci.sh" ]]; then
     return 0
   fi
 
