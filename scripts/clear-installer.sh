@@ -137,6 +137,19 @@ cleanup() {
   fi
 }
 
+ensure_git_repo() {
+  local dir="$1"
+  if ! command -v git >/dev/null 2>&1; then
+    error "git is required but not found in PATH"
+    return 1
+  fi
+  if ! git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then
+    error "Target directory is not a git repository: $dir"
+    error "Initialize git first (e.g., git init) and run installer again"
+    return 1
+  fi
+}
+
 has_embedded_payload() {
   awk '/^__CLEAR_PAYLOAD_BELOW__$/ { found=1; exit } END { exit(found ? 0 : 1) }' "$SCRIPT_PATH"
 }
@@ -768,6 +781,7 @@ if [[ -n "$INSTALL_EXAMPLES_PATH" ]]; then
 fi
 
 if [[ "$SETUP_ONLY" == "true" ]]; then
+  ensure_git_repo "$TARGET_DIR" || exit "$EXIT_PREFLIGHT"
   setup_only_is_fresh="false"
   [[ -f "$TARGET_DIR/clear/autonomy.yml" ]] || setup_only_is_fresh="true"
   run_setup_flow "$TARGET_DIR" "$SOURCE_ROOT" "$setup_only_is_fresh"
@@ -779,6 +793,8 @@ if [[ ! -d "$TARGET_DIR" ]]; then
   error "Target directory does not exist: $TARGET_DIR"
   exit "$EXIT_RUNTIME"
 fi
+
+ensure_git_repo "$TARGET_DIR" || exit "$EXIT_PREFLIGHT"
 
 if [[ "$DRY_RUN" == "true" ]]; then
   info "Dry run: would install/update CLEAR files in $TARGET_DIR"
