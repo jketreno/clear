@@ -1,6 +1,6 @@
 // eslint.config.js — Modern ESLint flat config
 // Copy this to your project root and customize.
-// Requires ESLint 9+ and appropriate plugins.
+// ⚠ Requires ESLint 9+ (flat config format) and appropriate plugins.
 //
 // Install: npm install -D eslint @eslint/js globals typescript-eslint
 
@@ -53,6 +53,12 @@ export default tseslint.config(
 
       // ── ADD YOUR PROJECT-SPECIFIC RULES BELOW ──────────────────────────────
 
+      // Example: Require explicit return types on public functions
+      // '@typescript-eslint/explicit-function-return-type': ['warn', { allowExpressions: true }],
+
+      // Example: Enforce import ordering for readability in large modules
+      // 'sort-imports': ['warn', { ignoreDeclarationSort: true }],
+
       // Example: Enforce consistent error handling
       // '@typescript-eslint/only-throw-error': 'error',
 
@@ -70,6 +76,8 @@ export default tseslint.config(
           patterns: [
             // ── ADD YOUR MODULE BOUNDARY RULES ─────────────────────────────
             // Derive these from clear/autonomy.yml boundaries.
+            // Why: boundary rules prevent accidental imports that bypass
+            // review layers and silently violate autonomy decisions.
 
             // Example: Prevent direct imports from payment module (use service layer)
             // {
