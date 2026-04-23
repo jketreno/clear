@@ -64,7 +64,7 @@ rl_require_command() {
 
 rl_validate_semver() {
   local version="$1"
-  [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
+  [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?(\+[0-9A-Za-z.]+)?$ ]]
 }
 
 rl_read_version_file() {
