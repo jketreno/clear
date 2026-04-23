@@ -262,11 +262,12 @@ get_skill_meta() {
 
   first_line=$(head -1 "$file")
   if [[ "$first_line" == "---" ]]; then
-    awk -v f="${field}:" '
+    awk -v f="${field}" '
       NR==1{next}
       /^---$/{exit}
-      index($0,f)==1{
-        val=substr($0,length(f)+1)
+      $0 ~ ("^[[:space:]]*" f "[[:space:]]*:"){
+        val=$0
+        sub("^[[:space:]]*" f "[[:space:]]*:[[:space:]]*", "", val)
         sub(/^[[:space:]"\x27]+/,"",val)
         sub(/[[:space:]"\x27]+$/,"",val)
         print val
