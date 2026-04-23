@@ -1,6 +1,6 @@
 ---
 name: mcp-server
-description: "Scaffolds a minimal MCP server that exposes CLEAR enforcement tools so agents can run verify checks and autonomy lookups through typed calls."
+description: "Scaffold an MCP server exposing CLEAR verify and autonomy-check tools"
 mode: agent
 ---
 

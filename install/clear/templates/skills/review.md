@@ -1,6 +1,6 @@
 ---
 name: review
-description: "Reviews the full diff between the current branch HEAD and an appropriate base ref (defaults to upstream/origin branch; uses origin/main if requested) for correctness, DRY, language-specific best-known methods, and accurate docs/tests. Use when the user asks to 'review changes', 'review the diff', or do a PR/code review. Produces an execution plan only if the diff introduced issues; notes context-only observations separately."
+description: "Code review for correctness, KISS/DRY/YAGNI/SOLID, security, language BKMs, tests, and docs"
 mode: agent
 ---
 
@@ -91,6 +91,10 @@ Apply every category below to every changed file. Do not skip a category because
 - [ ] **Security misconfiguration** — debug modes left on, verbose stack traces in production responses, permissive CORS (`*`), missing security headers (`Content-Security-Policy`, `X-Frame-Options`)
 - [ ] **Timing attacks** — secrets, tokens, or HMACs compared with `==` (not constant-time); use `crypto.timingSafeEqual` (Node), `hmac.compare_digest` (Python), `subtle.ConstantTimeCompare` (Go)
 - [ ] **New dependencies** — for each newly added package: check for known CVEs, review license compatibility, and consider whether a lighter or in-tree alternative exists
+- [ ] **Dependency confusion / typosquatting** — verify that newly added packages use the correct registry scope and exact expected package name; check for private package names that could be shadowed by public registries
+- [ ] **Overly broad permissions / scopes** — IAM roles, OAuth scopes, file permissions, or container capabilities granted wider than the code actually requires (principle of least privilege)
+- [ ] **Secrets in structured logs / telemetry** — fields like `request_body`, `headers`, or `user_data` serialized into logs or tracing spans without redaction of sensitive fields
+- [ ] **Unsafe deserialization** — deserializing untrusted input (pickle, Java ObjectInputStream, YAML `load`, `eval`-based JSON parsing) without safe loader or schema validation
 
 ---
 
@@ -108,16 +112,39 @@ Apply every category below to every changed file. Do not skip a category because
 
 ---
 
-### 4. DRY & Code Quality
+### 4. Design Principles (KISS / DRY / YAGNI / SOLID)
 
+**KISS — Keep It Simple**
+- [ ] **Over-engineered solution** — the implementation is more complex than the problem warrants; a simpler approach (fewer layers, fewer abstractions, less indirection) would achieve the same result
+- [ ] **Unnecessary abstraction layers** — wrapper classes, factory methods, strategy patterns, or middleware introduced when the code has only one concrete implementation and no stated need for extensibility
+- [ ] **Clever code over clear code** — one-liners, ternary chains, or bitwise tricks that sacrifice readability for brevity without a measurable performance justification
+- [ ] **Excessive cyclomatic complexity** — deeply nested conditionals or loops; consider early returns, guard clauses, or decomposition into smaller functions
+
+**DRY — Don't Repeat Yourself**
 - [ ] **Duplicated logic** — identical or near-identical blocks in two or more locations that should be extracted into a shared function or module
+- [ ] **Duplicated knowledge** — the same business rule, constant, or configuration value defined in multiple places where a single source of truth should be referenced
+- [ ] **Copy-paste with minor variations** — blocks that differ only in variable names or literals, indicating a missing parameterized abstraction
+
+**YAGNI — You Ain't Gonna Need It**
+- [ ] **Speculative generality** — interfaces, parameters, extension points, or configuration options added "in case we need them later" with no current consumer
+- [ ] **Unused parameters or options** — function signatures that accept arguments no caller currently provides, or configuration knobs that are always set to their default
+- [ ] **Premature optimization** — caching, pooling, lazy initialization, or custom data structures introduced without evidence of a performance problem in the current workload
+- [ ] **Gold-plating** — features, error handling branches, or edge-case coverage beyond what the requirements or ticket specify
+
+**SOLID Principles**
+- [ ] **Single Responsibility (SRP)** — a function, module, or class doing multiple unrelated things; if you need two different reasons to change it, split it
+- [ ] **Open/Closed (OCP)** — extending behavior requires modifying existing code instead of adding new code; look for growing `switch`/`match`/`if-else` chains that should be polymorphism, a registry, or a strategy map
+- [ ] **Liskov Substitution (LSP)** — a subtype, interface implementation, or duck-typed replacement that violates the contract of the type it substitutes (throws unexpected errors, ignores required parameters, changes return semantics)
+- [ ] **Interface Segregation (ISP)** — a consumer forced to depend on methods or fields it does not use; an interface or struct with members relevant to only some of its implementors should be split
+- [ ] **Dependency Inversion (DIP)** — high-level logic directly instantiating or importing low-level infrastructure (database clients, HTTP clients, file system) instead of depending on an abstraction passed via constructor, parameter, or module boundary
+
+**Code Hygiene**
 - [ ] **Magic numbers / strings** — hardcoded literals with no named constant or comment explaining their meaning or origin
 - [ ] **Dead code** — unreachable branches, variables assigned but never read, functions defined but never called, imports never used
-- [ ] **Excessive cyclomatic complexity** — deeply nested conditionals or loops; consider early returns, guard clauses, or decomposition into smaller functions
 - [ ] **Abstraction leakage** — internal implementation details (concrete types, storage mechanisms, internal error codes) exposed through a public interface
 - [ ] **Naming inconsistency** — mixed conventions (`camelCase` vs `snake_case`), misleading names (a function named `get*` that has side effects), inconsistent verb tense
-- [ ] **Single-responsibility violation** — a function doing multiple unrelated things; makes testing and future changes harder
 - [ ] **Inappropriate global state** — module-level mutable singletons that make parallelism or isolated testing difficult
+- [ ] **Tell, Don't Ask (TDA) violation** — code that queries an object's internal state, makes a decision, then calls back into the object; the decision logic should live inside the object
 
 ---
 
@@ -134,6 +161,8 @@ Apply the checks for the language(s) present in the diff.
 - [ ] Prototype pollution risk — merging untrusted objects via `Object.assign({}, userInput)` or spread
 - [ ] `Promise` chains missing `.catch()` or a `try/catch` around top-level `await`
 - [ ] Non-null assertions (`!`) on values that could genuinely be `null` or `undefined` at runtime
+- [ ] Barrel file re-exports that defeat tree-shaking or create circular dependency chains
+- [ ] Missing `AbortController` / signal propagation on `fetch` or long-lived async operations that should be cancellable
 
 **Python**
 - [ ] Mutable default arguments — `def f(items=[])` or `def f(cfg={}):`
@@ -142,6 +171,8 @@ Apply the checks for the language(s) present in the diff.
 - [ ] Float equality with `==` — use `math.isclose()`
 - [ ] Missing `if __name__ == "__main__":` guard on executable scripts
 - [ ] Unrestricted `eval()` or `exec()` on user input
+- [ ] Missing type hints on public function signatures (for projects using mypy/pyright)
+- [ ] `os.path` string manipulation instead of `pathlib.Path` for filesystem operations (Python 3.4+)
 
 **Go**
 - [ ] Ignored error returns — `_ , err` discarded or `_` used where the error must be handled
@@ -149,18 +180,23 @@ Apply the checks for the language(s) present in the diff.
 - [ ] Functions performing I/O that accept no `context.Context` argument
 - [ ] Inconsistent value vs. pointer receivers on the same type's method set
 - [ ] `init()` functions with side effects that make packages hard to test in isolation
+- [ ] Exported types/functions that should be unexported — overly broad public API surface within internal packages
+- [ ] `sync.Mutex` embedded in a struct that is copied by value, silently breaking the mutex
 
 **Rust**
 - [ ] `unwrap()` or `expect()` in non-test, non-prototype code without a `// Safety:` or `// Invariant:` comment justifying why the panic cannot occur
 - [ ] `unsafe` blocks without a `// SAFETY:` comment explaining which invariants hold
 - [ ] Unchecked integer arithmetic in non-performance-critical paths (prefer `checked_*`, `saturating_*`, or `wrapping_*`)
 - [ ] `clone()` where a borrow would suffice, especially in hot paths
+- [ ] `.to_string()` / `.to_owned()` in function signatures where `&str` / `AsRef<str>` would avoid allocation
 
 **General / Any Language**
 - [ ] Allocations inside tight inner loops that could be hoisted or pooled
 - [ ] N+1 query patterns — fetching related records one-by-one inside a loop instead of a batch fetch or JOIN
 - [ ] Blocking I/O called from within an async or reactive context
 - [ ] Logging that could produce unbounded output under load (e.g. logging every request body without size limits)
+- [ ] Unbounded collections — maps, lists, or caches that grow without eviction, leading to memory exhaustion under sustained load
+- [ ] Missing timeouts — HTTP clients, database connections, or external calls with no timeout or deadline, risking thread/goroutine starvation
 
 ---
 

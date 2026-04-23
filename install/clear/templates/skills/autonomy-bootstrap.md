@@ -1,6 +1,6 @@
 ---
 name: autonomy-bootstrap
-description: "Interviews the team and drafts clear/autonomy.yml boundaries plus sources_of_truth, then validates the configuration and setup follow-through steps."
+description: "Draft or refine clear/autonomy.yml boundaries and sources_of_truth via guided interview"
 mode: agent
 ---
 
