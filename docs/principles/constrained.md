@@ -132,6 +132,19 @@ See `clear/templates/architecture-tests/` for generic tests and `clear/examples/
 
 ## Wiring It All Together
 
+### Enforcement Decision Tree
+
+Use this quick decision order when adding a new rule:
+
+1. Can the rule be enforced by syntax/import/style checks?
+  - Yes -> implement a linter rule first (fastest feedback).
+2. If not, can the rule be represented as a type constraint?
+  - Yes -> enforce with TypeScript types and `tsc --noEmit`.
+3. If not, does it require repository-wide structural analysis?
+  - Yes -> add an architecture test.
+4. If none of the above fully enforce it:
+  - Combine levels (for example, lint + architecture test) and keep the invariant explicit.
+
 **Step 1:** Identify the rule you want to enforce  
 ("All API responses must include a `requestId`")
 
@@ -154,6 +167,54 @@ You must run ./clear/verify-ci.sh and pass it before marking work complete.
 ```
 
 The AI will now catch and fix its own violations before you see the code.
+
+### End-to-End Example: "All API responses include requestId"
+
+Linter layer (prevent bypassing shared response helper):
+
+```javascript
+// eslint.config.js
+export default [
+  {
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            group: ['../raw-response/*'],
+            message: 'Use the shared response helper that injects requestId'
+          }
+        ]
+      }]
+    }
+  }
+];
+```
+
+Type layer (response contract requires requestId):
+
+```typescript
+type ApiResponse<T> = {
+  requestId: string;
+  data: T;
+};
+
+function ok<T>(requestId: string, data: T): ApiResponse<T> {
+  return { requestId, data };
+}
+```
+
+Architecture test layer (all handlers must return requestId):
+
+```javascript
+// tests/architecture/request-id.test.js
+test('all API handlers include requestId in response payload', () => {
+  const handlers = loadApiHandlers();
+  const violations = handlers.filter((h) => !handlerIncludesRequestId(h));
+  expect(violations).toHaveLength(0);
+});
+```
+
+This stack gives fast feedback (lint), compile-time guarantees (types), and a structural backstop (architecture test).
 
 ---
 
