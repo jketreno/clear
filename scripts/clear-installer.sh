@@ -802,6 +802,16 @@ ensure_git_repo "$TARGET_DIR" || exit "$EXIT_PREFLIGHT"
 if [[ "$DRY_RUN" == "true" ]]; then
   info "Dry run: would install/update CLEAR files in $TARGET_DIR"
   info "Dry run: CLEAR-managed files go under clear/, .claude/, .cursor/, .github/, .vscode/, and root"
+  if [[ "$RUN_SETUP" == "true" ]]; then
+    info "Dry run: setup flow would run"
+    info "Dry run: Step 1 Project Info"
+    info "Dry run: Step 2 Autonomy Boundaries"
+    info "Dry run: Step 3 Script Permissions"
+    info "Dry run: Step 4 Install Skills [optional]"
+    info "Dry run: Step 5 Extensions [optional]"
+  else
+    info "Dry run: setup flow would be skipped (--no-setup)"
+  fi
   echo "RESULT success mode=install-or-update dry-run=true"
   exit 0
 fi
