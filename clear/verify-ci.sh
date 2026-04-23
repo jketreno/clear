@@ -309,6 +309,7 @@ detect_project() {
   HAS_NODE=false
   HAS_NODE_RUNTIME=false
   HAS_PYTHON=false
+  PYTHON_CMD=""
   HAS_GO=false
   HAS_RUST=false
   HAS_MAKE=false
@@ -318,6 +319,11 @@ detect_project() {
     HAS_NODE_RUNTIME=true
   fi
   [[ -f "$PROJECT_ROOT/pyproject.toml" || -f "$PROJECT_ROOT/setup.py" || -f "$PROJECT_ROOT/requirements.txt" ]] && HAS_PYTHON=true || true
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_CMD="python3"
+  elif command -v python >/dev/null 2>&1; then
+    PYTHON_CMD="python"
+  fi
   [[ -f "$PROJECT_ROOT/go.mod" ]] && HAS_GO=true || true
   [[ -f "$PROJECT_ROOT/Cargo.toml" ]] && HAS_RUST=true || true
   [[ -f "$PROJECT_ROOT/Makefile" ]] && HAS_MAKE=true || true
@@ -343,7 +349,11 @@ check_build() {
   fi
 
   if $HAS_PYTHON; then
-    run_check "Python syntax check" "python3 -m compileall '$PROJECT_ROOT' -q 2>&1 | head -20" || true
+    if [[ -n "$PYTHON_CMD" ]]; then
+      run_check "Python syntax check" "$PYTHON_CMD -m compileall '$PROJECT_ROOT' -q 2>&1 | head -20" || true
+    else
+      warn "Python project detected but no Python interpreter found; skipping syntax check"
+    fi
   fi
 
   if $HAS_GO; then
