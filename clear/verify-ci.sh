@@ -110,7 +110,7 @@ run_check() {
   local name="$1"
   local cmd="$2"
   info "Running: $cmd"
-  if eval "$cmd"; then
+  if bash -c "$cmd"; then
     pass "$name"
     return 0
   else
