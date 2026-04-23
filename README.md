@@ -53,6 +53,10 @@ Manual prompts for boundaries/concepts are still available as a fallback.
 
 You should see all checks pass. This is the script your AI tool runs before reporting any work as complete. Right now it checks autonomy boundaries and shell compliance. Your project-specific checks come next.
 
+### 3 — Confirm your autonomy boundaries
+
+Open `clear/autonomy.yml` and review module levels (`full-autonomy`, `supervised`, `humans-only`) for your project. Keep high-risk areas conservative first, then relax specific low-risk paths after review.
+
 ### 4 — Add your first constraint
 
 Open your AI tool (Copilot, Claude Code, Cursor) in your project. It automatically reads the CLEAR config files installed in step 1. Paste this:
