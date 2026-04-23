@@ -19,6 +19,40 @@ The answer: **make enforcement stateless**.
 
 `verify-ci.sh` is already stateless — it's a script that runs against the current state of the filesystem. `autonomy.yml` is a static YAML file any process can read. Neither requires a loaded AI session to be enforced.
 
+### Orchestration Pseudocode
+
+```text
+function runClearAgentPipeline(tasks):
+  restricted = clear_list_humans_only()
+
+  for task in tasks:
+    candidatePaths = predict_changed_paths(task)
+    for p in candidatePaths:
+      level = clear_check_autonomy(p)
+      if level == "humans-only":
+        stop_and_request_human(task, p)
+
+  results = run_subagents_in_parallel(tasks)
+  if any(result.status != "done" for result in results):
+    fail_pipeline("sub-agent failure")
+
+  verify = clear_verify()
+  if verify.status != "passed":
+    fail_pipeline("post-flight verify failed")
+
+  return "ready-for-review"
+```
+
+### Enforcement Model Comparison
+
+| Dimension | Single-agent session | Multi-agent pipeline |
+|---|---|---|
+| Autonomy check timing | Agent checks before edits in-session | Orchestrator pre-flight + sub-agent guard |
+| Verification gate | Agent runs `./clear/verify-ci.sh` once before completion | Each sub-agent runs verify + final orchestrator verify |
+| Rule propagation | Prompt/session memory | Tool contract (`clear_check_autonomy`, `clear_verify`) |
+| Failure containment | One session rollback | Isolated task retry + post-merge verification |
+| Humans-only enforcement | Prompt-based refusal | Delegation block at orchestrator boundary |
+
 ---
 
 ## Autonomy Boundaries in Multi-Agent Workflows
