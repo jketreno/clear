@@ -81,6 +81,7 @@ rl_require_main_branch() {
   local expected_branch="${1:-main}"
   local current_branch
   current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+  [[ "$current_branch" != "HEAD" ]] || rl_die 3 "Releases cannot run from detached HEAD; checkout '$expected_branch' first"
   [[ "$current_branch" == "$expected_branch" ]] || rl_die 3 "Releases must be run from '$expected_branch' (current: '$current_branch')"
 }
 
