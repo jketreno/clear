@@ -25,6 +25,12 @@ if [[ ! -x "$VERIFY_SCRIPT" ]]; then
   exit 1
 fi
 
+if [[ "${CLEAR_SKIP_PRECOMMIT:-0}" == "1" ]]; then
+  echo "CLEAR pre-commit: skipped via CLEAR_SKIP_PRECOMMIT=1"
+  exit 0
+fi
+
+# --fast keeps commit feedback quick; full architecture checks run in CI.
 echo "CLEAR pre-commit: running verify-ci.sh --fast ..."
 "$VERIFY_SCRIPT" --fast
 
