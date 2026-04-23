@@ -6,6 +6,12 @@
 #   ./scripts/release.sh
 #   ./scripts/release.sh --version 1.2.3 --notes-file docs/release-notes/v1.2.3.md
 #   ./scripts/release.sh --dry-run
+#
+# Exit codes:
+#   2 - Invalid usage, input, or user-aborted preflight prompt
+#   3 - Preflight gate failed (git state, branch, verify, auth, duplicate tag)
+#   4 - Expected release artifact missing after build
+#   6 - GitHub release publish failed after tag push
 # =============================================================================
 
 set -euo pipefail
