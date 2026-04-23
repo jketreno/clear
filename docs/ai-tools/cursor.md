@@ -26,6 +26,23 @@ Cursor reads `.mdc` files from `.cursor/rules/` and applies them automatically. 
 | `clear-reality-aligned.mdc` | All files (alwaysApply) | [R] Derive from declared source of truth |
 | `clear-assertive.mdc` | Test files (globs) | [A] Write invariant tests, not confirmations |
 
+Install note:
+- These six rule files are installed by CLEAR automatically.
+- Additional `.cursor/rules/*.mdc` files are project-specific and should be added manually.
+
+Expected directory structure:
+
+```text
+.cursor/
+  rules/
+    clear-workflow.mdc
+    clear-limited.mdc
+    clear-constrained.mdc
+    clear-ephemeral.mdc
+    clear-reality-aligned.mdc
+    clear-assertive.mdc
+```
+
 ### Fallback: `.cursorrules`
 
 The root `.cursorrules` file provides a summary for older Cursor versions that don't support the `.cursor/rules/` directory. It points to the detailed MDC files.
@@ -59,8 +76,8 @@ globs: ["**/*.test.ts", "tests/**"]  # Apply only to matching files
 After setting up CLEAR, test each rule in Cursor:
 
 **Test [L] Limited:**
-Ask Cursor to modify a file in a `humans-only` path (e.g., `src/payment/processor.ts`).
-Expected: Cursor refuses and explains the boundary.
+Ask Cursor: "What autonomy level applies to `src/payment/processor.ts` based on clear/autonomy.yml?"
+Expected: Cursor reports the level and reason without modifying files.
 
 **Test workflow:**
 Ask Cursor "What must you do before marking work complete?"
@@ -146,7 +163,12 @@ For complex multi-file changes, use Cursor Composer (Ctrl/Cmd + I):
 - Check Settings → "Rules for AI" to see if rules are loading
 
 **`alwaysApply: true` rules not appearing:**
-- Some Cursor versions use different frontmatter keys. Try:
+- `alwaysApply` key support varies by Cursor version. Use this compatibility order:
+  1. Prefer `alwaysApply: true` on current versions.
+  2. If rules are ignored, try `always: true` for older builds.
+  3. Validate against the Cursor version currently installed in your team before standardizing.
+
+- Example fallback test:
   ```yaml
   ---
   alwaysApply: true
