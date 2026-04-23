@@ -36,6 +36,14 @@ Classify candidate paths into:
 - supervised: most application code requiring review
 - humans-only: auth/payment/compliance/safety-critical logic
 
+Decision matrix:
+
+| Path characteristics | Suggested level | Why |
+|---|---|---|
+| Authentication, payments, legal/compliance workflows, production access controls | humans-only | High impact mistakes require intentional manual authorship |
+| Core business logic, API handlers, shared domain models | supervised | AI can draft quickly, but behavior needs human review |
+| Generated code, boilerplate wiring, test fixtures, low-risk utilities | full-autonomy | Fast regeneration and iteration are low risk |
+
 ### Step 2: Draft module boundaries
 
 Draft a modules section with specific path patterns and reasons.
@@ -69,6 +77,17 @@ modules:
 ### Step 3: Define sources of truth
 
 Ask for 3-8 domain concepts that often cause drift.
+If the team is unsure which concepts to pick, start with these prompts:
+- "What data appears in more than one system and occasionally disagrees?"
+- "What contract breaks downstream services if changed unexpectedly?"
+- "Which domain terms require exact definitions across teams?"
+- "What is the canonical source for identity, pricing, permissions, and lifecycle state?"
+
+Common starting concepts by project type:
+- Backend API: identity, billing state, API schema, event contracts, RBAC policy
+- Frontend SPA: route map, API contract, design tokens, feature flags, auth session model
+- Monorepo: package boundaries, shared types/schema, build graph ownership, deployment metadata
+
 For each concept, capture:
 - concept
 - source_of_truth
@@ -83,6 +102,59 @@ sources_of_truth:
     source_of_truth: "Auth provider schema"
     defined_in: "infra/auth"
     note: "Provider claims win when app model differs"
+```
+
+Concrete module examples:
+
+```yaml
+# Backend API example
+modules:
+  - path: "src/auth"
+    level: humans-only
+    reason: "Authentication and token policy are security critical"
+  - path: "src/generated"
+    level: full-autonomy
+    reason: "Generated clients are safe to regenerate"
+  - path: "src"
+    level: supervised
+    reason: "Application logic requires review"
+  - path: "*"
+    level: supervised
+    reason: "Default review boundary"
+```
+
+```yaml
+# Frontend SPA example
+modules:
+  - path: "src/payments"
+    level: humans-only
+    reason: "Payment UX and flows require strict human control"
+  - path: "src/components/generated"
+    level: full-autonomy
+    reason: "Generated component wrappers can be regenerated"
+  - path: "src"
+    level: supervised
+    reason: "Feature code requires review"
+  - path: "*"
+    level: supervised
+    reason: "Default review boundary"
+```
+
+```yaml
+# Monorepo example
+modules:
+  - path: "packages/security"
+    level: humans-only
+    reason: "Security controls and policies are high risk"
+  - path: "packages/*/generated"
+    level: full-autonomy
+    reason: "Generated artifacts are safe to refresh"
+  - path: "packages"
+    level: supervised
+    reason: "Most package logic needs review"
+  - path: "*"
+    level: supervised
+    reason: "Default review boundary"
 ```
 
 ### Step 4: Validate the configuration
@@ -105,6 +177,10 @@ If user requests direct edits, write clear/autonomy.yml with:
 If user requests plan-only output, return a complete patch preview instead.
 
 ### Step 6: Provide setup follow-through checklist
+
+Adoption recommendation:
+- Start conservative: keep broad paths as supervised first.
+- Promote specific low-risk paths to full-autonomy only after an audit of recent changes and failures.
 
 After autonomy.yml is ready, recommend these CLEAR setup actions:
 1. Confirm clear/verify-local.sh contains project-specific checks.
