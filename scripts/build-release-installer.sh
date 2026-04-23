@@ -79,6 +79,22 @@ PAYLOAD_DIR="$STAGE_DIR/clear-dist"
 mkdir -p "$PAYLOAD_DIR"
 
 rl_info "Staging release payload"
+
+SOURCE_CHECKSUMS_PATH="$WORK_DIR/source-checksums.sha256"
+rl_info "Capturing source checksums"
+(
+  cd "$PROJECT_ROOT"
+  sha256sum \
+    scripts/clear-installer.sh \
+    clear/principles.md \
+    clear/extensions.yml \
+    clear/verify-ci.sh \
+    README.md \
+    CHANGELOG.md \
+    LICENSE \
+    VERSION >"$SOURCE_CHECKSUMS_PATH"
+)
+
 mkdir -p "$PAYLOAD_DIR/scripts"
 cp "$PROJECT_ROOT/scripts/clear-installer.sh" "$PAYLOAD_DIR/scripts/clear-installer.sh"
 mkdir -p "$PAYLOAD_DIR/clear"
@@ -91,6 +107,7 @@ cp "$PROJECT_ROOT/README.md" "$PAYLOAD_DIR/README.md"
 cp "$PROJECT_ROOT/CHANGELOG.md" "$PAYLOAD_DIR/CHANGELOG.md"
 cp "$PROJECT_ROOT/LICENSE" "$PAYLOAD_DIR/LICENSE"
 cp "$PROJECT_ROOT/VERSION" "$PAYLOAD_DIR/VERSION"
+cp "$SOURCE_CHECKSUMS_PATH" "$PAYLOAD_DIR/source-checksums.sha256"
 
 PAYLOAD_TARBALL="$WORK_DIR/payload.tar.gz"
 (
