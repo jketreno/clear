@@ -178,87 +178,75 @@ import json
 import re
 from pathlib import Path
 import yaml
-from mcp.server import Server
-from mcp.server.stdio import stdio_server
-from mcp.types import Tool, TextContent, CallToolResult
+from mcp.server.fastmcp import FastMCP
 
 PROJECT_ROOT = Path(__file__).parent.parent
+VERIFY_SCRIPT = PROJECT_ROOT / "clear" / "verify-ci.sh"
+AUTONOMY_FILE = PROJECT_ROOT / "clear" / "autonomy.yml"
 
-app = Server("clear")
+mcp = FastMCP("clear")
 
-@app.list_tools()
-async def list_tools():
-    return [
-        Tool(
-            name="clear_verify",
-            description="Run clear/verify-ci.sh and return structured pass/fail results. Call this after any code generation before reporting work complete.",
-            inputSchema={"type": "object", "properties": {}, "required": []}
-        ),
-        Tool(
-            name="clear_check_autonomy",
-            description="Look up the autonomy level for a file path in clear/autonomy.yml. Call this before modifying any file.",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "path": {"type": "string", "description": "File path relative to project root"}
-                },
-                "required": ["path"]
-            }
-        ),
-        Tool(
-            name="clear_list_humans_only",
-            description="List all humans-only paths from clear/autonomy.yml. Call this as a pre-flight check before delegating tasks to sub-agents.",
-            inputSchema={"type": "object", "properties": {}, "required": []}
-        )
-    ]
+def load_autonomy():
+  if not AUTONOMY_FILE.exists():
+    return {"error": "missing_autonomy", "message": "clear/autonomy.yml not found"}
+  with open(AUTONOMY_FILE, encoding="utf-8") as f:
+    return yaml.safe_load(f) or {}
 
-@app.call_tool()
-async def call_tool(name: str, arguments: dict):
-    if name == "clear_verify":
-        result = subprocess.run(
-            [str(PROJECT_ROOT / "clear" / "verify-ci.sh")],
+@mcp.tool()
+def clear_verify() -> str:
+  if not VERIFY_SCRIPT.exists():
+    return json.dumps({
+      "status": "error",
+      "error": "missing_verify_script",
+      "summary": "clear/verify-ci.sh not found"
+    })
+
+  result = subprocess.run(
+      [str(VERIFY_SCRIPT)],
             cwd=str(PROJECT_ROOT),
             capture_output=True,
             text=True
-        )
-        if result.returncode == 0:
-            return [TextContent(type="text", text=json.dumps({
-                "status": "passed", "output": result.stdout, "summary": "All checks passed"
-            }))]
-        else:
-            output = result.stdout + result.stderr
-            failed = re.findall(r"❌ (.+)", output)
-            return [TextContent(type="text", text=json.dumps({
-                "status": "failed", "failed": failed, "output": output,
-                "summary": f"{len(failed)} check(s) failed"
-            }))]
+    )
+  if result.returncode == 0:
+    return json.dumps({
+      "status": "passed", "output": result.stdout, "summary": "All checks passed"
+    })
 
-    if name == "clear_check_autonomy":
-        target = arguments["path"]
-        with open(PROJECT_ROOT / "clear" / "autonomy.yml") as f:
-            autonomy = yaml.safe_load(f)
-        modules = autonomy.get("modules", [])
-        matched = next((m for m in modules if m["path"] != "*" and target.startswith(m["path"])), None)
-        if not matched:
-            matched = next((m for m in modules if m["path"] == "*"), None)
-        return [TextContent(type="text", text=json.dumps({
-            "path": target,
-            "matched_rule": matched["path"] if matched else "none",
-            "level": matched["level"] if matched else "unknown",
-            "reason": matched.get("reason", "") if matched else ""
-        }))]
+  output = result.stdout + result.stderr
+  failed = re.findall(r"❌ (.+)", output)
+  return json.dumps({
+    "status": "failed", "failed": failed, "output": output,
+    "summary": f"{len(failed)} check(s) failed"
+  })
 
-    if name == "clear_list_humans_only":
-        with open(PROJECT_ROOT / "clear" / "autonomy.yml") as f:
-            autonomy = yaml.safe_load(f)
-        humans_only = [m["path"] for m in autonomy.get("modules", []) if m["level"] == "humans-only"]
-        return [TextContent(type="text", text=json.dumps({"humans_only_paths": humans_only}))]
+@mcp.tool()
+def clear_check_autonomy(path: str) -> str:
+  autonomy = load_autonomy()
+  if "error" in autonomy:
+    return json.dumps({"status": "error", **autonomy})
 
-    raise ValueError(f"Unknown tool: {name}")
+  modules = autonomy.get("modules", [])
+  matched = next((m for m in modules if m.get("path") != "*" and path.startswith(m.get("path", ""))), None)
+  if not matched:
+    matched = next((m for m in modules if m.get("path") == "*"), None)
+  return json.dumps({
+    "path": path,
+    "matched_rule": matched.get("path", "none") if matched else "none",
+    "level": matched.get("level", "unknown") if matched else "unknown",
+    "reason": matched.get("reason", "") if matched else ""
+  })
+
+@mcp.tool()
+def clear_list_humans_only() -> str:
+  autonomy = load_autonomy()
+  if "error" in autonomy:
+    return json.dumps({"status": "error", **autonomy})
+
+  humans_only = [m.get("path") for m in autonomy.get("modules", []) if m.get("level") == "humans-only"]
+  return json.dumps({"humans_only_paths": [p for p in humans_only if p]})
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(stdio_server(app))
+  mcp.run(transport="stdio")
 ```
 
 ### Step 3: Create package/dependency file
@@ -307,7 +295,7 @@ if [[ -f "$PROJECT_ROOT/mcp/clear-server.js" ]]; then
 fi
 ```
 
-### Step 6: Register in Claude Code settings
+### Step 6: Register in Claude Code and Cursor settings
 
 After generating, output these registration instructions:
 
@@ -331,7 +319,17 @@ CLEAR MCP server created at mcp/. To register with Claude Code:
      }
    }
 
-3. Restart Claude Code. Tools will be available as:
+3. Add to .cursor/mcp.json (create if missing):
+   {
+     "mcpServers": {
+       "clear": {
+         "command": "node",        // or "python"
+         "args": ["./mcp/clear-server.js"]   // or ["./mcp/clear_server.py"]
+       }
+     }
+   }
+
+4. Restart Claude Code / Cursor. Tools will be available as:
    - mcp__clear__clear_verify
    - mcp__clear__clear_check_autonomy
    - mcp__clear__clear_list_humans_only
@@ -354,3 +352,11 @@ pip install -r mcp/requirements.txt && echo '{"jsonrpc":"2.0","id":1,"method":"t
 ```
 
 Expected output: a JSON response listing the three CLEAR tools.
+
+Passing tool-call validation example:
+
+```bash
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"clear_verify","arguments":{}}}' | node mcp/clear-server.js
+```
+
+Expected output: JSON containing `"status":"passed"` or `"status":"failed"` with structured fields.
