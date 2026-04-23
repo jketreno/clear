@@ -127,6 +127,16 @@ Options:
   --install-examples <path>
                     Extract CLEAR examples to <path> and exit
   --extract <path>  Extract full embedded payload only, do not install/update
+  
+Setup flow (runs by default after install/update unless --no-setup):
+  1. Project info
+  2. Autonomy boundaries
+  3. Script permissions
+  4. Skill installation (optional)
+  5. Extensions setup (optional)
+
+Standalone setup:
+  ./scripts/clear-installer.sh --target <path> --setup-only
   --help            Show this help
 USAGE
 }
