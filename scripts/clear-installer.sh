@@ -814,7 +814,8 @@ else
   info "Detected fresh target. Running bootstrap workflow."
 fi
 
-# CLEAR-managed files (always updated)
+# CLEAR-managed files (always updated).
+# These are framework-owned assets that should track the installer version.
 copy_file_update "$SOURCE_ROOT/clear/verify-ci.sh" "$TARGET_DIR/clear/verify-ci.sh"
 copy_file_update "$SOURCE_ROOT/clear/principles.md" "$TARGET_DIR/clear/principles.md"
 copy_dir_update "$SOURCE_ROOT/install/.github" "$TARGET_DIR/.github" "prompts"
@@ -827,7 +828,8 @@ copy_dir_update "$SOURCE_ROOT/install/clear/templates" "$TARGET_DIR/clear/templa
 copy_dir_update "$SOURCE_ROOT/install/clear/examples" "$TARGET_DIR/clear/examples"
 copy_dir_update "$SOURCE_ROOT/install/clear/docs" "$TARGET_DIR/clear/docs"
 
-# Project-owned files (create-if-missing)
+# Project-owned files (create-if-missing).
+# These are user-customizable entry points and should not be overwritten.
 copy_file_if_missing "$SOURCE_ROOT/install/clear/verify-local.sh" "$TARGET_DIR/clear/verify-local.sh"
 copy_file_if_missing "$SOURCE_ROOT/install/clear/autonomy.yml" "$TARGET_DIR/clear/autonomy.yml"
 copy_file_if_missing "$SOURCE_ROOT/clear/extensions.yml" "$TARGET_DIR/clear/extensions.yml"
