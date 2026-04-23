@@ -73,6 +73,10 @@ info() { echo -e "${BLUE}ℹ  $*${NC}"; }
 warn() { echo -e "${YELLOW}⚠  $*${NC}"; }
 success() { echo -e "${GREEN}✅ $*${NC}"; }
 
+escape_sed_regex() {
+  printf '%s\n' "$1" | sed 's/[][\\.^$*+?{}|()/]/\\&/g'
+}
+
 header() {
   echo ""
   echo -e "${BLUE}════════════════════════════════════════════${NC}"
@@ -524,12 +528,13 @@ run_setup_flow() {
         ext="${EXT_NAMES[$idx]}"
         cmd="${EXT_CMDS[$idx]:-$ext}"
         hint="${EXT_HINTS[$idx]:-check the extensions.yml for install instructions}"
+        escaped_ext="$(escape_sed_regex "$ext")"
 
         if [[ "${hint,,}" == *"built-in"* ]] || command -v "$cmd" &>/dev/null; then
-          sed -i "/name:[[:space:]]*${ext}/,/enabled:/{s/enabled:[[:space:]]*false/enabled: true/}" "$extensions_file"
+          sed -i "/name:[[:space:]]*${escaped_ext}/,/enabled:/{s/enabled:[[:space:]]*false/enabled: true/}" "$extensions_file"
           success "Enabled extension: $ext"
         elif ask_yn "Enable $ext without installing? (verify-ci.sh will remind you)" "n"; then
-          sed -i "/name:[[:space:]]*${ext}/,/enabled:/{s/enabled:[[:space:]]*false/enabled: true/}" "$extensions_file"
+          sed -i "/name:[[:space:]]*${escaped_ext}/,/enabled:/{s/enabled:[[:space:]]*false/enabled: true/}" "$extensions_file"
           success "Enabled extension: $ext (not yet installed)"
         else
           info "Skipped $ext"
