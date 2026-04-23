@@ -46,6 +46,42 @@ This is especially useful for communicating module-specific skills to Claude.
 
 CLEAR adds three custom commands to `.claude/commands/`:
 
+Default command file contents (installed by CLEAR):
+
+```text
+.claude/commands/
+  verify.md
+  check-autonomy.md
+  update-autonomy.md
+```
+
+```markdown
+<!-- .claude/commands/verify.md -->
+# /project:verify
+
+Run ./clear/verify-ci.sh.
+Return PASS/FAIL plus failing check names and shortest actionable fix list.
+```
+
+```markdown
+<!-- .claude/commands/check-autonomy.md -->
+# /project:check-autonomy [path]
+
+Read clear/autonomy.yml and return matched path rule, level, and reason for [path].
+If level is humans-only, refuse code generation and explain why.
+```
+
+```markdown
+<!-- .claude/commands/update-autonomy.md -->
+# /project:update-autonomy
+
+Guide a safe update to clear/autonomy.yml:
+1. Confirm path + intended level.
+2. Add/update reason.
+3. Validate YAML.
+4. Run ./clear/verify-ci.sh.
+```
+
 ### `/project:verify`
 
 Runs `verify-ci.sh` and returns a structured report.
@@ -88,6 +124,16 @@ Reason: Money movement; AI errors are financial risk
 What this means:
 I won't generate code in this path. Please make this change yourself.
 If the boundary has changed, run /project:update-autonomy to update autonomy.yml.
+```
+
+Real output example from this repository:
+
+```text
+## Autonomy Check: ORIGIN.md
+
+Matched rule: ORIGIN.md
+Level: humans-only
+Reason: Historical origin narrative; avoid AI paraphrase that could distort facts
 ```
 
 ### `/project:update-autonomy`
@@ -221,6 +267,15 @@ See [docs/agentic.md](../agentic.md) for a complete guide on using CLEAR with mu
 - How autonomy boundaries apply across agent chains
 - Enforcement patterns for orchestrator + sub-agent workflows
 - Pre-flight checks before delegating to a sub-agent
+
+### When to use MCP vs direct CLAUDE.md
+
+| Scenario | Prefer | Why |
+|---|---|---|
+| Single agent working in one Claude session | CLAUDE.md direct instructions | Lowest setup overhead; instructions are already loaded |
+| Multi-agent orchestration (parallel workers) | MCP tools + CLAUDE.md | Shared, typed enforcement across agents and runtimes |
+| Headless automation / CI bots | MCP tools (or direct `verify-ci.sh`) | Stateless execution without relying on session context |
+| Quick local coding tasks | CLAUDE.md + `/project:*` commands | Fast feedback with minimal configuration |
 
 ---
 
