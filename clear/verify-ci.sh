@@ -119,6 +119,42 @@ run_check() {
   fi
 }
 
+extract_humans_only_paths() {
+  local autonomy_file="$1"
+
+  if command -v yq >/dev/null 2>&1; then
+    yq -r '.modules[]? | select(.level == "humans-only") | .path // empty' "$autonomy_file" 2>/dev/null || true
+    return 0
+  fi
+
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$autonomy_file" <<'PY' 2>/dev/null || true
+import sys
+from pathlib import Path
+
+try:
+  import yaml
+except Exception:
+  sys.exit(0)
+
+path = Path(sys.argv[1])
+try:
+  data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+except Exception:
+  sys.exit(0)
+
+for module in data.get("modules", []) or []:
+  if not isinstance(module, dict):
+    continue
+  if module.get("level") != "humans-only":
+    continue
+  mod_path = module.get("path")
+  if isinstance(mod_path, str) and mod_path.strip():
+    print(mod_path.strip())
+PY
+  fi
+}
+
 list_project_files_respecting_gitignore() {
   if command -v git >/dev/null 2>&1 && git -C "$PROJECT_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
     (
@@ -402,7 +438,8 @@ check_architecture() {
 check_autonomy() {
   section "CLEAR Autonomy Boundaries"
 
-  if [[ -f "$PROJECT_ROOT/clear/autonomy.yml" ]]; then
+  local autonomy_file="$PROJECT_ROOT/clear/autonomy.yml"
+  if [[ -f "$autonomy_file" ]]; then
     pass "autonomy.yml found"
 
     # Check for humans-only paths — warn if git staging area contains any
@@ -410,7 +447,6 @@ check_autonomy() {
       local staged_files
       staged_files=$(git -C "$PROJECT_ROOT" diff --cached --name-only 2>/dev/null || echo "")
       if [[ -n "$staged_files" ]]; then
-        # Humans-only paths appear as `path:` before `level: humans-only` in each module block.
         while IFS= read -r humans_path; do
           [[ -z "$humans_path" || "$humans_path" == "*" ]] && continue
           while IFS= read -r staged; do
@@ -420,19 +456,7 @@ check_autonomy() {
               warn "Review clear/autonomy.yml before committing AI-generated changes to this path."
             fi
           done <<<"$staged_files"
-        done < <(awk '
-          /^  - path:/ {
-            line = $0
-            sub(/^.*path:[[:space:]]*/, "", line)
-            gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
-            gsub(/^["'\''"]|["'\''"]$/, "", line)
-            current_path = line
-            next
-          }
-          /^[[:space:]]+level:[[:space:]]*humans-only/ {
-            if (current_path != "") print current_path
-          }
-        ' "$PROJECT_ROOT/clear/autonomy.yml" 2>/dev/null || true)
+        done < <(extract_humans_only_paths "$autonomy_file")
       fi
     fi
   else
