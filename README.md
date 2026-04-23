@@ -24,6 +24,16 @@ Want to know the thought process that led to CLEAR's design? Read the [origin st
 
 ---
 
+## CLEAR in 60 seconds
+
+1. Install CLEAR into your repo with one script.
+2. AI tools read CLEAR rules (`CLAUDE.md`, `.github/*`, `.cursor/rules/*`) automatically.
+3. Before claiming work is done, AI must run `./clear/verify-ci.sh`.
+4. If checks fail, AI fixes and reruns until all pass.
+5. You review constraints and architecture, not repetitive implementation mistakes.
+
+---
+
 ## Quick Start
 
 ### 1 — Install CLEAR into your project
