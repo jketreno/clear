@@ -19,6 +19,7 @@ EXIT_USAGE=2
 EXIT_PREFLIGHT=3
 EXIT_RUNTIME=4
 EXIT_EXTRACT=5
+EXIT_ABORT=6
 
 SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 
@@ -30,6 +31,7 @@ EXTRACT_PATH=""
 INSTALL_EXAMPLES_PATH=""
 RUN_SETUP=true
 SETUP_ONLY=false
+UPDATE=false
 WORK_DIR=""
 HAS_TTY=false
 
@@ -113,15 +115,18 @@ usage() {
   cat <<'USAGE'
 Usage:
   clear-installer.sh [--target <path>] [--dry-run] [--force] [--yes] [--no-setup]
+  clear-installer.sh --update [--target <path>] [--dry-run] [--yes] [--no-setup]
   clear-installer.sh --install-examples <path> [--force]
   clear-installer.sh --extract <path> [--force]
   clear-installer.sh [--dry-run] /path/to/project
 
 Options:
   --target <path>   Target repository path
+  --update          Required when updating an existing CLEAR installation.
+                    Prompts per changed file: [U]pdate, (d)iff, (s)kip, (a)bort
   --dry-run         Show what would happen without modifying target files
   --force           Allow overwrite for --extract/--install-examples collisions
-  --yes             Auto-confirm prompts
+  --yes             Auto-confirm prompts (including --update file prompts)
   --no-setup        Skip running setup wizard after install/update
   --setup-only      Run setup flow only (internal use)
   --install-examples <path>
@@ -181,8 +186,7 @@ extract_payload() {
 copy_file_update() {
   local src="$1"
   local dst="$2"
-  mkdir -p "$(dirname "$dst")"
-  cp "$src" "$dst"
+  prompt_update_file "$src" "$dst" || exit "$EXIT_ABORT"
 }
 
 copy_file_if_missing() {
@@ -210,9 +214,93 @@ copy_dir_update() {
 
     local dst_file
     dst_file="$dst_dir/$rel"
-    mkdir -p "$(dirname "$dst_file")"
-    cp "$src_file" "$dst_file"
+    prompt_update_file "$src_file" "$dst_file" || exit "$EXIT_ABORT"
   done < <(find "$src_dir" -type f -print0 | sort -z)
+}
+
+# prompt_update_file src dst
+#   Central file-write function for managed files during update.
+#   - New file (dst missing): create without prompting
+#   - Identical file: skip silently
+#   - Dry-run: print what would happen, return
+#   - Fresh install: overwrite without prompting
+#   - --yes or no TTY: auto-confirm
+#   - Interactive: prompt [U]pdate / (d)iff / (s)kip / (a)bort
+#   Returns 0 on success/skip, 1 on user abort.
+prompt_update_file() {
+  local src="$1"
+  local dst="$2"
+  local rel="${dst#"$TARGET_DIR"/}"
+
+  # New file — just create it
+  if [[ ! -e "$dst" ]]; then
+    if [[ "$DRY_RUN" == "true" ]]; then
+      echo "  + $rel (new)"
+      return 0
+    fi
+    mkdir -p "$(dirname "$dst")"
+    cp "$src" "$dst"
+    return 0
+  fi
+
+  # Identical — skip silently
+  if cmp -s "$src" "$dst"; then
+    return 0
+  fi
+
+  # Dry-run — report and return
+  if [[ "$DRY_RUN" == "true" ]]; then
+    echo "  ~ $rel (changed)"
+    return 0
+  fi
+
+  # Fresh install — overwrite without prompting
+  if [[ "$is_fresh_install" == "true" ]]; then
+    cp "$src" "$dst"
+    return 0
+  fi
+
+  # --yes or no TTY — auto-confirm
+  if [[ "$YES" == "true" ]] || ! $HAS_TTY; then
+    cp "$src" "$dst"
+    info "  updated: $rel"
+    return 0
+  fi
+
+  # Interactive prompt loop
+  while true; do
+    printf "  %s changed — [U]pdate / (d)iff / (s)kip / (a)bort: " "$rel" >/dev/tty
+    local choice
+    read -r choice </dev/tty
+    choice="${choice:-u}"
+    case "${choice,,}" in
+      u | update)
+        cp "$src" "$dst"
+        success "  updated: $rel"
+        return 0
+        ;;
+      d | diff)
+        if command -v diff >/dev/null 2>&1; then
+          diff -u "$dst" "$src" --label "installed/$rel" --label "new/$rel" || true
+        else
+          warn "  diff not available; showing file sizes instead"
+          echo "    installed: $(wc -c <"$dst") bytes"
+          echo "    new:       $(wc -c <"$src") bytes"
+        fi
+        ;;
+      s | skip)
+        info "  skipped: $rel"
+        return 0
+        ;;
+      a | abort)
+        error "Update aborted by user."
+        return 1
+        ;;
+      *)
+        echo "  Invalid choice. Enter u, d, s, or a." >/dev/tty
+        ;;
+    esac
+  done
 }
 
 ask() {
@@ -645,6 +733,10 @@ while [[ $# -gt 0 ]]; do
       SETUP_ONLY=true
       shift
       ;;
+    --update)
+      UPDATE=true
+      shift
+      ;;
     --install-examples)
       INSTALL_EXAMPLES_PATH="${2:-}"
       shift 2
@@ -810,29 +902,22 @@ fi
 
 ensure_git_repo "$TARGET_DIR" || exit "$EXIT_PREFLIGHT"
 
-if [[ "$DRY_RUN" == "true" ]]; then
-  info "Dry run: would install/update CLEAR files in $TARGET_DIR"
-  info "Dry run: CLEAR-managed files go under clear/, .claude/, .cursor/, .github/, .vscode/, and root"
-  if [[ "$RUN_SETUP" == "true" ]]; then
-    info "Dry run: setup flow would run"
-    info "Dry run: Step 1 Project Info"
-    info "Dry run: Step 2 Autonomy Boundaries"
-    info "Dry run: Step 3 Script Permissions"
-    info "Dry run: Step 4 Install Skills [optional]"
-    info "Dry run: Step 5 Extensions [optional]"
-  else
-    info "Dry run: setup flow would be skipped (--no-setup)"
-  fi
-  echo "RESULT success mode=install-or-update dry-run=true"
-  exit 0
-fi
-
 is_fresh_install="false"
 if [[ -f "$TARGET_DIR/clear/autonomy.yml" ]]; then
+  if [[ "$UPDATE" != "true" && "$DRY_RUN" != "true" ]]; then
+    error "CLEAR is already installed in this project."
+    error "To update, re-run with --update:"
+    error "  $0 --target $TARGET_DIR --update"
+    exit "$EXIT_USAGE"
+  fi
   info "Detected existing CLEAR project. Running update workflow."
 else
   is_fresh_install="true"
   info "Detected fresh target. Running bootstrap workflow."
+fi
+
+if [[ "$DRY_RUN" == "true" ]]; then
+  info "Dry run: listing file changes (+ new, ~ changed):"
 fi
 
 # CLEAR-managed files (always updated).
@@ -865,13 +950,23 @@ if [[ -d "$TARGET_DIR/.github/prompts" ]]; then
       src_skill="$SOURCE_ROOT/install/clear/templates/skills/${skill_name}.md"
     fi
     if [[ -n "$src_skill" ]]; then
-      cp "$src_skill" "$prompt_file"
+      prompt_update_file "$src_skill" "$prompt_file" || exit "$EXIT_ABORT"
     fi
   done < <(find "$TARGET_DIR/.github/prompts" -name "*.prompt.md" -type f | sort)
 fi
 
 if [[ -d "$TARGET_DIR/clear" ]]; then
   chmod +x "$TARGET_DIR/clear/"*.sh 2>/dev/null || true
+fi
+
+if [[ "$DRY_RUN" == "true" ]]; then
+  if [[ "$RUN_SETUP" == "true" ]]; then
+    info "Dry run: setup flow would run after file updates"
+  else
+    info "Dry run: setup flow would be skipped (--no-setup)"
+  fi
+  echo "RESULT success mode=install-or-update dry-run=true"
+  exit 0
 fi
 
 if [[ "$RUN_SETUP" == "true" ]]; then
