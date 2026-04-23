@@ -170,6 +170,10 @@ The AI will now catch and fix its own violations before you see the code.
 
 ### End-to-End Example: "All API responses include requestId"
 
+> **Note:** The snippets below are illustrative — they show the *shape* of each
+> enforcement layer, not production-ready code. Adapt the patterns to your
+> stack and tooling.
+
 Linter layer (prevent bypassing shared response helper):
 
 ```javascript
