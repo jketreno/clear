@@ -41,20 +41,43 @@ collect_humans_only_paths() {
   autonomy_file="$PROJECT_ROOT/clear/autonomy.yml"
   [[ -f "$autonomy_file" ]] || return 0
 
-  local current_path=""
-  while IFS= read -r line; do
-    if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*path:[[:space:]]*(.*)$ ]]; then
-      current_path="${BASH_REMATCH[1]}"
-      current_path="${current_path#\"}"
-      current_path="${current_path%\"}"
-      continue
-    fi
+  if command -v yq >/dev/null 2>&1; then
+    while IFS= read -r path_rule; do
+      [[ -n "$path_rule" ]] && out_ref+=("$path_rule")
+    done < <(yq -r '.modules[]? | select(.level == "humans-only") | .path // empty' "$autonomy_file" 2>/dev/null || true)
+    return 0
+  fi
 
-    if [[ "$line" =~ ^[[:space:]]*level:[[:space:]]*humans-only$ ]]; then
-      [[ -n "$current_path" ]] && out_ref+=("$current_path")
-      current_path=""
-    fi
-  done <"$autonomy_file"
+  if command -v python3 >/dev/null 2>&1; then
+    while IFS= read -r path_rule; do
+      [[ -n "$path_rule" ]] && out_ref+=("$path_rule")
+    done < <(
+      python3 - "$autonomy_file" <<'PY' 2>/dev/null || true
+import sys
+from pathlib import Path
+
+try:
+    import yaml
+except Exception:
+    sys.exit(0)
+
+path = Path(sys.argv[1])
+try:
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+except Exception:
+    sys.exit(0)
+
+for module in data.get("modules", []) or []:
+    if not isinstance(module, dict):
+        continue
+    if module.get("level") != "humans-only":
+        continue
+    mod_path = module.get("path")
+    if isinstance(mod_path, str) and mod_path.strip():
+        print(mod_path.strip())
+PY
+    )
+  fi
 }
 
 is_humans_only_match() {
@@ -93,7 +116,10 @@ run_shellcheck_check() {
   fi
 
   local output_file
-  output_file="$(mktemp)"
+  if ! output_file="$(mktemp)"; then
+    fail "Shellcheck (failed to create temporary output file)"
+    return 1
+  fi
   if shellcheck -x --severity=error "${abs_files[@]}" >"$output_file" 2>&1; then
     pass "Shellcheck"
   else
@@ -112,7 +138,11 @@ run_shfmt_check() {
   fi
 
   if [[ "${FIX_MODE:-false}" == "true" ]]; then
-    if shfmt -w -i 2 -ci -bn -ln=bash "${abs_files[@]}"; then
+    local shfmt_flags="${SHFMT_FLAGS:--i 2 -ci -bn -ln=bash}"
+    # Intentional split for env-configurable shfmt flags.
+    # shellcheck disable=SC2206
+    local shfmt_args=($shfmt_flags)
+    if shfmt "${shfmt_args[@]}" -w "${abs_files[@]}"; then
       pass "shfmt (auto-fixed)"
       return 0
     fi
@@ -121,8 +151,15 @@ run_shfmt_check() {
   fi
 
   local output_file
-  output_file="$(mktemp)"
-  if shfmt -d -i 2 -ci -bn -ln=bash "${abs_files[@]}" >"$output_file" 2>&1; then
+  if ! output_file="$(mktemp)"; then
+    fail "shfmt (failed to create temporary output file)"
+    return 1
+  fi
+  local shfmt_flags="${SHFMT_FLAGS:--i 2 -ci -bn -ln=bash}"
+  # Intentional split for env-configurable shfmt flags.
+  # shellcheck disable=SC2206
+  local shfmt_args=($shfmt_flags)
+  if shfmt "${shfmt_args[@]}" -d "${abs_files[@]}" >"$output_file" 2>&1; then
     pass "shfmt"
   else
     fail "shfmt"
@@ -185,10 +222,11 @@ run_scripts_guardrails_check() {
 run_forbidden_pipeline_check() {
   local -a rel_files=("$@")
   local has_error=false
+  local forbidden_pattern='curl[[:space:]]*\|[[:space:]]*bash|wget[[:space:]]*\|[[:space:]]*bash|curl[^\n|]*\|[[:space:]]*bash|wget[^\n|]*\|[[:space:]]*bash|source[[:space:]]*<\([[:space:]]*(curl|wget)|eval[[:space:]]*\$\([[:space:]]*(curl|wget)'
 
   if command -v rg >/dev/null 2>&1; then
     local match_output
-    match_output="$(cd "$PROJECT_ROOT" && rg -n --no-heading 'curl[^\n|]*\|[[:space:]]*bash|wget[^\n|]*\|[[:space:]]*bash' -- "${rel_files[@]}" || true)"
+    match_output="$(cd "$PROJECT_ROOT" && rg -n --no-heading "$forbidden_pattern" -- "${rel_files[@]}" || true)"
     if [[ -n "$match_output" ]]; then
       echo "$match_output" >&2
       has_error=true
@@ -196,8 +234,8 @@ run_forbidden_pipeline_check() {
   else
     local rel_path
     for rel_path in "${rel_files[@]}"; do
-      if grep -En 'curl.*\|[[:space:]]*bash|wget.*\|[[:space:]]*bash' "$PROJECT_ROOT/$rel_path" >/dev/null 2>&1; then
-        grep -En 'curl.*\|[[:space:]]*bash|wget.*\|[[:space:]]*bash' "$PROJECT_ROOT/$rel_path" >&2 || true
+      if grep -En "$forbidden_pattern" "$PROJECT_ROOT/$rel_path" >/dev/null 2>&1; then
+        grep -En "$forbidden_pattern" "$PROJECT_ROOT/$rel_path" >&2 || true
         has_error=true
       fi
     done
