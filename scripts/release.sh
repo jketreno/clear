@@ -145,12 +145,12 @@ Usage: ./scripts/release.sh [options]
 Options:
   --version <semver>   Override VERSION file value
   --dry-run            Print actions without mutating git/GitHub
-  --skip-verify        Skip ./clear/verify-ci.sh (break-glass)
+  --skip-verify        Skip ./clear/verify-ci.sh (break-glass; bypasses local CI gate)
   --yes                Auto-confirm interactive prompts
   --notes-file <path>  File to use for GitHub release notes
   --notes-template <path> Template file used when --notes-file is omitted
   --signing-key <id>   GPG key ID/fingerprint for checksum signature
-  --no-sign            Skip checksum signature generation (break-glass)
+  --no-sign            Skip checksum signature generation (break-glass; artifacts are unsigned)
   --help               Show this help
 EOF
       exit 0
