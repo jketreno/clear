@@ -288,7 +288,10 @@ sync_autonomy_project_name() {
   [[ -f "$autonomy_file" ]] || return 0
 
   escaped_project_name="${selected_project_name//\"/\\\"}"
-  tmp_file="$(mktemp)"
+  if ! tmp_file="$(mktemp)"; then
+    error "Failed to create temporary file while syncing autonomy project name"
+    return 1
+  fi
 
   awk -v project_name="$escaped_project_name" '
     BEGIN {
