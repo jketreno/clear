@@ -307,12 +307,16 @@ run_lizard_check() {
 
 detect_project() {
   HAS_NODE=false
+  HAS_NODE_RUNTIME=false
   HAS_PYTHON=false
   HAS_GO=false
   HAS_RUST=false
   HAS_MAKE=false
 
   [[ -f "$PROJECT_ROOT/package.json" ]] && HAS_NODE=true || true
+  if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
+    HAS_NODE_RUNTIME=true
+  fi
   [[ -f "$PROJECT_ROOT/pyproject.toml" || -f "$PROJECT_ROOT/setup.py" || -f "$PROJECT_ROOT/requirements.txt" ]] && HAS_PYTHON=true || true
   [[ -f "$PROJECT_ROOT/go.mod" ]] && HAS_GO=true || true
   [[ -f "$PROJECT_ROOT/Cargo.toml" ]] && HAS_RUST=true || true
@@ -325,7 +329,9 @@ check_build() {
   section "Build"
 
   if $HAS_NODE; then
-    if [[ -f "$PROJECT_ROOT/package.json" ]]; then
+    if ! $HAS_NODE_RUNTIME; then
+      warn "package.json found but node/npm are not installed; skipping Node.js build checks"
+    else
       local build_script
       build_script=$(node -e "const p=require('$PROJECT_ROOT/package.json'); console.log(p.scripts && p.scripts.build ? 'build' : '')" 2>/dev/null || echo "")
       if [[ -n "$build_script" ]]; then
@@ -353,23 +359,27 @@ check_lint() {
   section "Linting"
 
   if $HAS_NODE; then
-    local fix_flag=""
-    $FIX_MODE && fix_flag="--fix"
+    if ! $HAS_NODE_RUNTIME; then
+      warn "package.json found but node/npm are not installed; skipping Node.js lint/type checks"
+    else
+      local fix_flag=""
+      $FIX_MODE && fix_flag="--fix"
 
-    if node -e "require('$PROJECT_ROOT/node_modules/.bin/eslint')" 2>/dev/null; then
-      run_check "ESLint" "cd '$PROJECT_ROOT' && npx eslint . $fix_flag 2>&1" || true
-    elif [[ -f "$PROJECT_ROOT/.eslintrc.js" || -f "$PROJECT_ROOT/.eslintrc.json" || -f "$PROJECT_ROOT/eslint.config.js" ]]; then
-      warn "ESLint config found but ESLint not installed. Run: npm install"
-    fi
+      if node -e "require('$PROJECT_ROOT/node_modules/.bin/eslint')" 2>/dev/null; then
+        run_check "ESLint" "cd '$PROJECT_ROOT' && npx eslint . $fix_flag 2>&1" || true
+      elif [[ -f "$PROJECT_ROOT/.eslintrc.js" || -f "$PROJECT_ROOT/.eslintrc.json" || -f "$PROJECT_ROOT/eslint.config.js" ]]; then
+        warn "ESLint config found but ESLint not installed. Run: npm install"
+      fi
 
-    if node -e "require('$PROJECT_ROOT/node_modules/.bin/prettier')" 2>/dev/null; then
-      local prettier_flag="--check"
-      $FIX_MODE && prettier_flag="--write"
-      run_check "Prettier" "cd '$PROJECT_ROOT' && npx prettier $prettier_flag . 2>&1" || true
-    fi
+      if node -e "require('$PROJECT_ROOT/node_modules/.bin/prettier')" 2>/dev/null; then
+        local prettier_flag="--check"
+        $FIX_MODE && prettier_flag="--write"
+        run_check "Prettier" "cd '$PROJECT_ROOT' && npx prettier $prettier_flag . 2>&1" || true
+      fi
 
-    if node -e "require('$PROJECT_ROOT/node_modules/typescript')" 2>/dev/null; then
-      run_check "TypeScript (no-emit)" "cd '$PROJECT_ROOT' && npx tsc --noEmit 2>&1" || true
+      if node -e "require('$PROJECT_ROOT/node_modules/typescript')" 2>/dev/null; then
+        run_check "TypeScript (no-emit)" "cd '$PROJECT_ROOT' && npx tsc --noEmit 2>&1" || true
+      fi
     fi
   fi
 
@@ -399,10 +409,14 @@ check_tests() {
   section "Tests"
 
   if $HAS_NODE; then
-    local test_script
-    test_script=$(node -e "const p=require('$PROJECT_ROOT/package.json'); console.log(p.scripts && p.scripts.test ? 'test' : '')" 2>/dev/null || echo "")
-    if [[ -n "$test_script" ]]; then
-      run_check "npm test" "cd '$PROJECT_ROOT' && npm test 2>&1" || true
+    if ! $HAS_NODE_RUNTIME; then
+      warn "package.json found but node/npm are not installed; skipping Node.js test checks"
+    else
+      local test_script
+      test_script=$(node -e "const p=require('$PROJECT_ROOT/package.json'); console.log(p.scripts && p.scripts.test ? 'test' : '')" 2>/dev/null || echo "")
+      if [[ -n "$test_script" ]]; then
+        run_check "npm test" "cd '$PROJECT_ROOT' && npm test 2>&1" || true
+      fi
     fi
   fi
 
@@ -430,10 +444,14 @@ check_architecture() {
   fi
 
   if $HAS_NODE; then
-    local arch_script
-    arch_script=$(node -e "const p=require('$PROJECT_ROOT/package.json'); console.log(p.scripts && p.scripts['test:architecture'] ? 'test:architecture' : '')" 2>/dev/null || echo "")
-    if [[ -n "$arch_script" ]]; then
-      run_check "Architecture tests" "cd '$PROJECT_ROOT' && npm run test:architecture 2>&1" || true
+    if ! $HAS_NODE_RUNTIME; then
+      warn "package.json found but node/npm are not installed; skipping Node.js architecture checks"
+    else
+      local arch_script
+      arch_script=$(node -e "const p=require('$PROJECT_ROOT/package.json'); console.log(p.scripts && p.scripts['test:architecture'] ? 'test:architecture' : '')" 2>/dev/null || echo "")
+      if [[ -n "$arch_script" ]]; then
+        run_check "Architecture tests" "cd '$PROJECT_ROOT' && npm run test:architecture 2>&1" || true
+      fi
     fi
   fi
 
