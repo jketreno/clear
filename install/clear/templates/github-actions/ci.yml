@@ -12,6 +12,7 @@ permissions:
   contents: read
 
 jobs:
+  # ── REQUIRED ───────────────────────────────────────────────────────────────
   verify:
     name: CLEAR Verification
     runs-on: ubuntu-latest
@@ -25,7 +26,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── Language Setup: Uncomment what your project needs ──────────────────
+      # ── REQUIRED: Language Setup (customize for your project) ──────────────
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -44,10 +45,14 @@ jobs:
       #   with:
       #     go-version: '1.22'
 
-      # ── Install Dependencies ───────────────────────────────────────────────
+      # ── REQUIRED: Install Dependencies ─────────────────────────────────────
 
       - name: Install dependencies
-        run: npm ci   # UPDATE: use your package manager (pip install -r requirements.txt, go mod download, etc.)
+        run: |
+          # Choose one package manager command:
+          npm ci
+          # pip install -r requirements.txt
+          # go mod download
 
       # ── Run CLEAR Verification ─────────────────────────────────────────────
       # This runs the same script your AI runs locally.
@@ -58,14 +63,14 @@ jobs:
           chmod +x clear/verify-ci.sh
           ./clear/verify-ci.sh
 
-      # ── Optional: Upload test coverage ────────────────────────────────────
+      # ── OPTIONAL: Upload test coverage ─────────────────────────────────────
 
       # - name: Upload coverage
       #   uses: codecov/codecov-action@v4
       #   with:
       #     token: ${{ secrets.CODECOV_TOKEN }}
 
-  # ── Architecture Tests (optional separate job for visibility) ──────────────
+  # ── OPTIONAL: Architecture Tests (separate job for visibility) ─────────────
   architecture:
     name: Architecture Tests
     runs-on: ubuntu-latest
@@ -82,14 +87,14 @@ jobs:
       - name: Run architecture tests
         run: |
           # These are the tests that enforce structural rules
-          # See clear/templates/architecture-tests/ for what to put here
+          # See install/clear/examples/architecture-tests/ for starter examples
           npx jest tests/architecture/ --passWithNoTests  # UPDATE: your arch test command
 
       - name: Check autonomy boundaries
         run: |
           npx jest tests/architecture/autonomy-guard.test.js --passWithNoTests
 
-  # ── Security: Dependency scanning ─────────────────────────────────────────
+  # ── OPTIONAL: Security dependency scanning ─────────────────────────────────
   security:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -109,3 +114,6 @@ jobs:
       #     languages: javascript  # or python, go, etc.
       # - name: Perform CodeQL Analysis
       #   uses: github/codeql-action/analyze@v3
+
+    # After adding this workflow, configure required status checks in:
+    # GitHub Settings -> Branches -> Branch protection rules.
