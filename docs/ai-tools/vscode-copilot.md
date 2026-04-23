@@ -45,7 +45,12 @@ Make sure this setting is on in VS Code:
 
 ```json
 // .vscode/settings.json (already configured)
-"github.copilot.chat.codeGeneration.useInstructionFiles": true
+Or via the UI: File -> Preferences -> Settings -> Extensions -> GitHub Copilot Chat -> Code Generation: Use Instruction Files.
+
+Verification checklist:
+1. Open Settings JSON and confirm `"github.copilot.chat.codeGeneration.useInstructionFiles": true`.
+2. Open Copilot Chat and ask: "List the instruction files currently applied in this workspace."
+3. Confirm responses reference `.github/copilot-instructions.md` and relevant `.github/instructions/*.instructions.md` files.
 ```
 
 Or via the UI: Settings → search "copilot instruction" → enable "Use Instruction Files".
@@ -69,11 +74,17 @@ CLEAR adds tasks to `Ctrl/Cmd + Shift + P` → "Tasks: Run Task":
 ```json
 // keybindings.json (Ctrl/Cmd + Shift + P → "Open Keyboard Shortcuts (JSON)")
 {
-  "key": "ctrl+shift+v",     // or your preferred key
+  "key": "ctrl+alt+v",       // pick a non-conflicting key for your platform
   "command": "workbench.action.tasks.runTask",
   "args": "CLEAR: Verify CI"
 }
 ```
+
+Installer note:
+- CLEAR pre-installs `.github/copilot-instructions.md` plus two scoped instruction files:
+  - `.github/instructions/scripts.instructions.md`
+  - `.github/instructions/tests.instructions.md`
+- Any additional `.github/instructions/*.instructions.md` files are project-specific and should be added manually.
 
 **Make it the default test task:**
 
