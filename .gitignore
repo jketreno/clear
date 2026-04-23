@@ -64,3 +64,4 @@ yarn-error.log*
 # package-lock.json
 # yarn.lock
 .envrc
+TODO.md
