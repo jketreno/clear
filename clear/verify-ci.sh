@@ -31,11 +31,33 @@ FAST_MODE=false
 FIX_MODE=false
 FAILED_CHECKS=()
 
+usage() {
+  cat <<'EOF'
+Usage: ./clear/verify-ci.sh [options]
+
+Run local CI/CD checks and enforce CLEAR constraints.
+
+Options:
+  --fast        Skip slow checks (architecture tests)
+  --fix         Auto-fix lint issues where supported
+  -h, --help    Show this help message and exit
+EOF
+}
+
 # Parse arguments
 for arg in "$@"; do
   case "$arg" in
     --fast) FAST_MODE=true ;;
     --fix) FIX_MODE=true ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $arg" >&2
+      echo "Run './clear/verify-ci.sh --help' for usage." >&2
+      exit 2
+      ;;
   esac
 done
 
