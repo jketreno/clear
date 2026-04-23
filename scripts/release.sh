@@ -265,6 +265,29 @@ if [[ "$DRY_RUN" == "true" ]]; then
   echo "----- END RELEASE NOTES -----"
 fi
 
+if [[ "$DRY_RUN" != "true" ]]; then
+  rl_info "Release notes preview: $NOTES_FILE"
+  echo "----- BEGIN RELEASE NOTES -----"
+  cat "$NOTES_FILE"
+  echo "----- END RELEASE NOTES -----"
+
+  if [[ "$YES" != "true" ]]; then
+    read -r -p "Edit release notes before publish? [y/N] " edit_reply
+    if [[ "$edit_reply" == "y" || "$edit_reply" == "Y" ]]; then
+      "${EDITOR:-vi}" "$NOTES_FILE"
+      rl_info "Updated release notes preview"
+      echo "----- BEGIN RELEASE NOTES -----"
+      cat "$NOTES_FILE"
+      echo "----- END RELEASE NOTES -----"
+    fi
+
+    read -r -p "Proceed with tag and publish using these notes? [y/N] " notes_reply
+    if [[ "$notes_reply" != "y" && "$notes_reply" != "Y" ]]; then
+      rl_die 2 "Release aborted before publish"
+    fi
+  fi
+fi
+
 rl_info "Creating and pushing git tag"
 rl_run "$DRY_RUN" git tag -a "v$VERSION" -m "CLEAR v$VERSION"
 rl_run "$DRY_RUN" git push origin "v$VERSION"
