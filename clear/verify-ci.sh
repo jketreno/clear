@@ -514,12 +514,13 @@ check_extensions() {
   local in_extension=false
   local ext_name="" ext_enabled="" ext_command="" ext_install="" ext_url=""
   local ext_threshold="" ext_paths="" ext_extra="" ext_file_types="" ext_exclude=""
+  local ext_count_comments="true"
 
   process_pending_extension() {
     if [[ -n "$ext_name" && "$ext_enabled" == "true" ]]; then
       run_extension "$ext_name" "$ext_command" "$ext_install" "$ext_url" \
         "$ext_threshold" "$ext_paths" "$ext_extra" \
-        "$ext_file_types" "$ext_exclude"
+        "$ext_file_types" "$ext_exclude" "$ext_count_comments"
     fi
   }
 
@@ -539,6 +540,7 @@ check_extensions() {
       ext_extra=""
       ext_file_types=""
       ext_exclude=""
+      ext_count_comments="true"
       in_extension=true
       continue
     fi
@@ -579,6 +581,10 @@ check_extensions() {
       ext_exclude="${BASH_REMATCH[1]}"
       ext_exclude="${ext_exclude#\"}"
       ext_exclude="${ext_exclude%\"}"
+    elif [[ "$line" =~ ^[[:space:]]*count_comments:[[:space:]]*(.*) ]]; then
+      ext_count_comments="${BASH_REMATCH[1]}"
+      ext_count_comments="${ext_count_comments#\"}"
+      ext_count_comments="${ext_count_comments%\"}"
     fi
   done <"$extensions_file"
 
@@ -589,7 +595,7 @@ check_extensions() {
 run_extension() {
   local name="$1" command="$2" install_hint="$3" url="$4"
   local threshold="$5" paths="$6" extra="$7"
-  local file_types="${8:-}" exclude="${9:-}"
+  local file_types="${8:-}" exclude="${9:-}" count_comments="${10:-true}"
 
   section "Extension: $name"
 
@@ -614,7 +620,7 @@ run_extension() {
       run_lizard_check "$threshold" "$paths" "$extra" "$file_types" "$exclude"
       ;;
     file-size)
-      run_file_size_check "$threshold" "$paths" "$file_types" "$exclude"
+      run_file_size_check "$threshold" "$paths" "$file_types" "$exclude" "$count_comments"
       ;;
     *)
       warn "Unknown extension '$name' — skipping (no built-in handler)"
@@ -623,11 +629,66 @@ run_extension() {
   esac
 }
 
+# line_comment_prefix ext
+#   Returns the line-comment prefix for a file extension, or empty string if
+#   the language uses only block comments (e.g. CSS) or is unrecognised.
+line_comment_prefix() {
+  local ext="$1"
+  case "$ext" in
+    js | jsx | ts | tsx | java | kt | kts | scala | go | rs | swift | c | cc | cpp | cxx | h | hpp | cs | dart | groovy | gradle)
+      echo "//"
+      ;;
+    py | rb | sh | bash | zsh | fish | r | pl | perl | tcl | yaml | yml | toml | makefile | mk | dockerfile)
+      echo "#"
+      ;;
+    lua)
+      echo "--"
+      ;;
+    *)
+      echo ""
+      ;;
+  esac
+}
+
+# count_code_lines filepath [count_comments]
+#   Counts lines in a file. When count_comments=false, pure comment-only lines
+#   (leading whitespace + comment prefix + anything) are excluded. A line that
+#   has code followed by a comment is NOT excluded. Blank lines are always
+#   counted. Block comments spanning multiple lines are not stripped.
+count_code_lines() {
+  local filepath="$1"
+  local count_comments="${2:-true}"
+
+  if [[ "$count_comments" == "true" ]]; then
+    wc -l <"$filepath"
+    return
+  fi
+
+  local ext="${filepath##*.}"
+  ext="${ext,,}"
+  local prefix
+  prefix="$(line_comment_prefix "$ext")"
+
+  if [[ -z "$prefix" ]]; then
+    # No known line-comment prefix for this type; count all lines
+    wc -l <"$filepath"
+    return
+  fi
+
+  # Escape prefix for use in sed (// → \/\/)
+  local escaped_prefix
+  escaped_prefix="$(printf '%s' "$prefix" | sed 's/[\/&]/\\&/g')"
+
+  # Strip lines that are ONLY a comment: optional whitespace, then the prefix
+  sed "/^[[:space:]]*${escaped_prefix}/d" "$filepath" | wc -l
+}
+
 run_file_size_check() {
   local max_lines="${1:-300}"
   local scan_paths="${2:-src}"
   local file_types="${3:-js ts tsx jsx}"
   local exclude_patterns="${4:-}"
+  local count_comments="${5:-true}"
   local effective_scan_paths="$scan_paths"
   local oversized_files=()
   local oversized_counts=()
@@ -637,6 +698,9 @@ run_file_size_check() {
     effective_scan_paths="."
     warn "File size check: configured paths not found (paths: $scan_paths); falling back to project root"
   fi
+
+  local count_label="lines"
+  [[ "$count_comments" == "false" ]] && count_label="non-comment lines"
 
   while IFS= read -r rel_path; do
     [[ -z "$rel_path" ]] && continue
@@ -649,7 +713,7 @@ run_file_size_check() {
     [[ -f "$filepath" ]] || continue
 
     local line_count
-    line_count=$(wc -l <"$filepath")
+    line_count=$(count_code_lines "$filepath" "$count_comments")
     ((checked_files += 1))
 
     if [[ "$line_count" -gt "$max_lines" ]]; then
@@ -664,12 +728,12 @@ run_file_size_check() {
   fi
 
   if [[ ${#oversized_files[@]} -eq 0 ]]; then
-    pass "File size (all files under $max_lines lines)"
+    pass "File size (all files under $max_lines $count_label)"
   else
-    fail "File size (${#oversized_files[@]} file(s) exceed $max_lines lines)"
+    fail "File size (${#oversized_files[@]} file(s) exceed $max_lines $count_label)"
     echo ""
     for i in "${!oversized_files[@]}"; do
-      echo -e "${RED}   ${oversized_files[$i]}: ${oversized_counts[$i]} lines (max: $max_lines)${NC}"
+      echo -e "${RED}   ${oversized_files[$i]}: ${oversized_counts[$i]} $count_label (max: $max_lines)${NC}"
     done
     echo ""
     echo -e "${YELLOW}   Split large files into smaller, focused modules.${NC}"
