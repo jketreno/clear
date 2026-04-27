@@ -169,6 +169,14 @@ But how do you actually enforce this? You can't just write it in a YAML file and
 
 For a working implementation of autonomy boundaries that's actually enforced through tooling and AI instructions, check out the CLEAR bootstrap project at https://github.com/jketreno/clear. It shows how to make these boundaries machine-readable and enforceable rather than just documentation.
 
+There's a second-order benefit here that teams miss until they've lived it: **the autonomy label is a signal to every other human on the team, not just the AI.**
+
+When a PR lands and the diff is entirely in full-autonomy modules, your senior engineers don't need to deep-read it. If verify-ci.sh passes, the constraints are your review. The label tells you: "this code was allowed to change freely, and it passed everything that matters."
+
+Compare that to today: a `git diff` doesn't tell you whether you're looking at throwaway glue code or critical business logic. Everything looks equally important. So you review everything equally — which means senior engineers are spending the same mental energy on a generated API wrapper as they are on a payment flow change.
+
+Explicit autonomy boundaries change that. A diff through full-autonomy code gets a different kind of attention than a diff through humans-only code. That's not lowering your standards. That's applying them correctly.
+
 ### **[E] Ephemeral** - Stop Editing Generated Code You or AI Could Regenerate
 
 Here's the workflow that's working: Set up your boundaries once using skills and rules files at the repository level. Then leverage AI to create all the boilerplate that adheres to those boundaries.
@@ -537,7 +545,9 @@ Want to see a complete working example? Check out the CLEAR bootstrap project at
 
 ## What I'm Seeing Work
 
-In my own work and across teams I've worked with, the pattern is consistent: once architecture rules are enforced rather than suggested, the majority of infrastructure code becomes safely AI-generated. Well-constrained modules see significant velocity gains — in some cases several times faster than manual implementation. Review time drops dramatically — you're reviewing constraints and tests, not implementations. Architecture drift drops to near zero because the build catches violations before humans ever see them. CI/CD failures become rare — issues are caught and fixed locally by AI before code is ever pushed.
+In my own work and across teams I've worked with, the pattern is consistent: once architecture rules are enforced rather than suggested, the majority of infrastructure code becomes safely AI-generated. Well-constrained modules see significant velocity gains — in some cases several times faster than manual implementation. Review time drops dramatically — you're reviewing constraints and tests, not implementations. The autonomy label starts doing work beyond just directing the AI: it signals to every engineer on PR review duty which diffs actually need deep attention. Code entirely in full-autonomy modules with a passing CI run doesn't need the same scrutiny as a change in a humans-only zone. That distinction used to live in someone's head. Now it's in the diff itself.
+
+Architecture drift drops to near zero because the build catches violations before humans ever see them. CI/CD failures become rare — issues are caught and fixed locally by AI before code is ever pushed.
 
 But also: more time spent upfront defining contracts and boundaries. This isn't free. You're trading code review time for architecture definition time.
 
